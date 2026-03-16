@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GHOST Investigation Report — {{ investigation.target }}</title>
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #12121a;
+    --border: #1e1e2e;
+    --text: #c9d1d9;
+    --muted: #6e7681;
+    --accent: #00ff9d;
+    --accent-dim: #00cc7d;
+    --danger: #ff4757;
+    --warn: #ffa502;
+    --info: #3742fa;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    padding: 0;
+  }
+  @media print {
+    body { background: #fff; color: #111; }
+    .page-break { page-break-before: always; }
+    .no-print { display: none !important; }
+    :root { --surface: #f9f9f9; --border: #ddd; --text: #111; --muted: #666; --accent: #007744; }
+  }
+
+  .container { max-width: 900px; margin: 0 auto; padding: 40px 30px; }
+
+  /* Header */
+  .report-header {
+    border-bottom: 2px solid var(--accent);
+    padding-bottom: 30px;
+    margin-bottom: 40px;
+  }
+  .report-header h1 {
+    font-size: 1.8em;
+    color: var(--accent);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-bottom: 5px;
+  }
+  .report-header .subtitle {
+    color: var(--muted);
+    font-size: 0.95em;
+  }
+  .meta-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+    margin-top: 20px;
+  }
+  .meta-item { background: var(--surface); padding: 12px 16px; border-radius: 6px; border: 1px solid var(--border); }
+  .meta-item .label { font-size: 0.75em; text-transform: uppercase; color: var(--muted); letter-spacing: 1px; }
+  .meta-item .value { font-size: 1.1em; margin-top: 2px; }
+
+  /* Risk gauge */
+  .risk-section { text-align: center; margin: 30px 0; }
+  .risk-badge {
+    display: inline-block;
+    padding: 10px 30px;
+    border-radius: 8px;
+    font-size: 1.4em;
+    font-weight: 700;
+    letter-spacing: 2px;
+  }
+  .risk-low { background: #0d3320; color: #00ff9d; border: 2px solid #00ff9d; }
+  .risk-medium { background: #3d2e00; color: #ffa502; border: 2px solid #ffa502; }
+  .risk-high { background: #3d0a0a; color: #ff4757; border: 2px solid #ff4757; }
+  .risk-critical { background: #4a0011; color: #ff0033; border: 2px solid #ff0033; animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.7} }
+  .risk-bar { width: 300px; height: 8px; background: var(--border); border-radius: 4px; margin: 12px auto 0; overflow: hidden; }
+  .risk-fill { height: 100%; border-radius: 4px; transition: width .5s; }
+
+  /* Sections */
+  .section { margin-bottom: 35px; }
+  .section h2 {
+    font-size: 1.2em;
+    color: var(--accent);
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 8px;
+    margin-bottom: 15px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+  }
+  .section h3 { font-size: 1em; color: var(--text); margin: 15px 0 8px; }
+
+  /* Summary */
+  .summary-box {
+    background: var(--surface);
+    border-left: 3px solid var(--accent);
+    padding: 20px;
+    border-radius: 0 8px 8px 0;
+    white-space: pre-wrap;
+  }
+
+  /* Tables */
+  table { width: 100%; border-collapse: collapse; margin: 10px 0; }
+  th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--border); }
+  th { font-size: 0.8em; text-transform: uppercase; color: var(--muted); letter-spacing: 1px; }
+  tr:hover { background: rgba(0,255,157,0.03); }
+
+  /* Profile cards */
+  .profiles-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
+  .profile-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px;
+    transition: border-color .2s;
+  }
+  .profile-card:hover { border-color: var(--accent); }
+  .profile-card .platform { font-weight: 600; color: var(--accent); }
+  .profile-card .url { font-size: 0.85em; color: var(--muted); word-break: break-all; }
+  .profile-card a { color: var(--accent-dim); text-decoration: none; }
+  .profile-card a:hover { text-decoration: underline; }
+
+  /* Timeline */
+  .timeline-item {
+    position: relative;
+    padding-left: 24px;
+    margin-bottom: 12px;
+    border-left: 2px solid var(--border);
+  }
+  .timeline-item::before {
+    content: '';
+    position: absolute;
+    left: -5px;
+    top: 6px;
+    width: 8px;
+    height: 8px;
+    background: var(--accent);
+    border-radius: 50%;
+  }
+  .timeline-date { font-size: 0.8em; color: var(--muted); }
+  .timeline-event { font-size: 0.95em; }
+
+  /* Errors */
+  .error-box {
+    background: rgba(255,71,87,0.08);
+    border: 1px solid rgba(255,71,87,0.3);
+    border-radius: 8px;
+    padding: 14px;
+    margin-top: 10px;
+  }
+  .error-box li { color: var(--danger); font-size: 0.9em; margin-left: 18px; }
+
+  /* Footer */
+  .report-footer {
+    border-top: 1px solid var(--border);
+    padding-top: 20px;
+    margin-top: 40px;
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.85em;
+  }
+
+  /* AI profile */
+  .ai-profile-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .ai-item { background: var(--surface); padding: 10px 14px; border-radius: 6px; border: 1px solid var(--border); }
+  .ai-item .label { font-size: 0.75em; text-transform: uppercase; color: var(--muted); }
+  .ai-item .val { margin-top: 2px; }
+
+  ul.findings-list { list-style: none; padding: 0; }
+  ul.findings-list li { padding: 6px 0; border-bottom: 1px solid var(--border); font-size: 0.95em; }
+  ul.findings-list li:last-child { border-bottom: none; }
+</style>
+</head>
+<body>
+<div class="container">
+  <!-- Header -->
+  <div class="report-header">
+    <h1>&#9760; GHOST Report</h1>
+    <p class="subtitle">Automated OSINT Investigation Report</p>
+    <div class="meta-grid">
+      <div class="meta-item">
+        <div class="label">Target</div>
+        <div class="value">{{ investigation.target }}</div>
+      </div>
+      <div class="meta-item">
+        <div class="label">Type</div>
+        <div class="value">{{ investigation.input_type | upper }}</div>
+      </div>
+      <div class="meta-item">
+        <div class="label">Investigation ID</div>
+        <div class="value" style="font-size:0.8em;font-family:monospace;">{{ investigation.id }}</div>
+      </div>
+      <div class="meta-item">
+        <div class="label">Started</div>
+        <div class="value">{{ investigation.started_at }}</div>
+      </div>
+      <div class="meta-item">
+        <div class="label">Completed</div>
+        <div class="value">{{ investigation.completed_at or 'In progress' }}</div>
+      </div>
+      <div class="meta-item">
+        <div class="label">Status</div>
+        <div class="value">{{ investigation.status | upper }}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Risk Assessment -->
+  {% set score = investigation.risk_score or 0 %}
+  {% set pct = (score * 100) | int %}
+  {% if score < 0.3 %}{% set level = "low" %}
+  {% elif score < 0.6 %}{% set level = "medium" %}
+  {% elif score < 0.85 %}{% set level = "high" %}
+  {% else %}{% set level = "critical" %}{% endif %}
+
+  <div class="risk-section">
+    <div class="risk-badge risk-{{ level }}">RISK: {{ level | upper }} — {{ pct }}%</div>
+    <div class="risk-bar">
+      <div class="risk-fill" style="width:{{ pct }}%; background: {% if level == 'low' %}#00ff9d{% elif level == 'medium' %}#ffa502{% else %}#ff4757{% endif %};"></div>
+    </div>
+  </div>
+
+  <!-- Executive Summary -->
+  {% if investigation.summary %}
+  <div class="section">
+    <h2>Executive Summary</h2>
+    <div class="summary-box">{{ investigation.summary }}</div>
+  </div>
+  {% endif %}
+
+  <!-- AI Profile -->
+  {% if investigation.ai_analysis and investigation.ai_analysis.profile is defined %}
+  <div class="section">
+    <h2>AI-Generated Profile</h2>
+    {% set p = investigation.ai_analysis.profile %}
+    <div class="ai-profile-grid">
+      {% if p.likely_name %}<div class="ai-item"><div class="label">Likely Name</div><div class="val">{{ p.likely_name }}</div></div>{% endif %}
+      {% if p.estimated_age_range %}<div class="ai-item"><div class="label">Age Range</div><div class="val">{{ p.estimated_age_range }}</div></div>{% endif %}
+      {% if p.likely_location %}<div class="ai-item"><div class="label">Location</div><div class="val">{{ p.likely_location }}</div></div>{% endif %}
+      {% if p.occupation_hints %}<div class="ai-item"><div class="label">Occupation</div><div class="val">{{ p.occupation_hints | join(', ') }}</div></div>{% endif %}
+      {% if p.interests %}<div class="ai-item"><div class="label">Interests</div><div class="val">{{ p.interests | join(', ') }}</div></div>{% endif %}
+      {% if p.online_behavior_pattern %}<div class="ai-item"><div class="label">Behavior Pattern</div><div class="val">{{ p.online_behavior_pattern }}</div></div>{% endif %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Key Findings -->
+  {% if investigation.ai_analysis and investigation.ai_analysis.key_findings is defined %}
+  <div class="section">
+    <h2>Key Findings</h2>
+    <ul class="findings-list">
+      {% for finding in investigation.ai_analysis.key_findings %}
+      <li>{{ finding }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+
+  <!-- Module Findings -->
+  <div class="section page-break">
+    <h2>Detailed Findings</h2>
+
+    <!-- Username / Social Profiles -->
+    {% set profiles = [] %}
+    {% if findings.get('username', {}).get('profiles') %}
+      {% for p in findings.username.profiles if p.status == 'found' %}
+        {% if profiles.append(p) %}{% endif %}
+      {% endfor %}
+    {% endif %}
+    {% if findings.get('social', {}).get('profiles') %}
+      {% for p in findings.social.profiles %}
+        {% if profiles.append(p) %}{% endif %}
+      {% endfor %}
+    {% endif %}
+
+    {% if profiles %}
+    <h3>Social Profiles Found ({{ profiles | length }})</h3>
+    <div class="profiles-grid">
+      {% for p in profiles %}
+      <div class="profile-card">
+        <div class="platform">{{ p.platform or 'Unknown' }}</div>
+        <div class="url"><a href="{{ p.url }}" target="_blank">{{ p.url }}</a></div>
+        {% if p.followers is defined %}<div style="font-size:0.85em;color:var(--muted);margin-top:4px;">Followers: {{ p.followers }}</div>{% endif %}
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Email -->
+    {% if findings.get('email') %}
+    <h3>Email Intelligence</h3>
+    <table>
+      {% if findings.email.get('validation') %}
+      <tr><td>Valid</td><td>{{ findings.email.validation.valid_format }}</td></tr>
+      <tr><td>Provider</td><td>{{ findings.email.validation.get('provider', 'Unknown') }}</td></tr>
+      <tr><td>Disposable</td><td>{{ findings.email.validation.get('disposable', False) }}</td></tr>
+      {% endif %}
+    </table>
+
+    {% if findings.email.get('breaches', {}).get('breaches') %}
+    <h3>Data Breaches ({{ findings.email.breaches.breaches | length }})</h3>
+    <table>
+      <thead><tr><th>Breach</th><th>Date</th><th>Data Exposed</th></tr></thead>
+      <tbody>
+        {% for b in findings.email.breaches.breaches %}
+        <tr>
+          <td>{{ b.name }}</td>
+          <td>{{ b.date }}</td>
+          <td>{{ b.get('data_classes', []) | join(', ') }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% endif %}
+
+    {% if findings.email.get('gravatar', {}).get('exists') %}
+    <h3>Gravatar Profile</h3>
+    <table>
+      <tr><td>Name</td><td>{{ findings.email.gravatar.display_name }}</td></tr>
+      {% if findings.email.gravatar.location %}<tr><td>Location</td><td>{{ findings.email.gravatar.location }}</td></tr>{% endif %}
+      {% if findings.email.gravatar.about %}<tr><td>About</td><td>{{ findings.email.gravatar.about }}</td></tr>{% endif %}
+    </table>
+    {% endif %}
+    {% endif %}
+
+    <!-- Phone -->
+    {% if findings.get('phone') %}
+    <h3>Phone Intelligence</h3>
+    <table>
+      {% set ph = findings.phone %}
+      {% if ph.get('parsed') %}
+      <tr><td>International</td><td>{{ ph.parsed.get('formatted', {}).get('international', '') }}</td></tr>
+      <tr><td>Carrier</td><td>{{ ph.parsed.get('carrier', 'Unknown') }}</td></tr>
+      <tr><td>Location</td><td>{{ ph.parsed.get('location', 'Unknown') }}</td></tr>
+      <tr><td>Type</td><td>{{ ph.parsed.get('type', 'Unknown') }}</td></tr>
+      {% endif %}
+    </table>
+    {% endif %}
+
+    <!-- Domain -->
+    {% if findings.get('domain') %}
+    <h3>Domain Intelligence</h3>
+    {% set dom = findings.domain %}
+    {% if dom.get('whois') %}
+    <table>
+      <tr><td>Registrar</td><td>{{ dom.whois.get('registrar', 'N/A') }}</td></tr>
+      <tr><td>Created</td><td>{{ dom.whois.get('creation_date', 'N/A') }}</td></tr>
+      <tr><td>Expires</td><td>{{ dom.whois.get('expiration_date', 'N/A') }}</td></tr>
+      <tr><td>Name Servers</td><td>{{ dom.whois.get('name_servers', []) | join(', ') }}</td></tr>
+    </table>
+    {% endif %}
+    {% if dom.get('subdomains', {}).get('subdomains') %}
+    <h3>Subdomains ({{ dom.subdomains.count }})</h3>
+    <ul class="findings-list">
+      {% for s in dom.subdomains.subdomains[:30] %}
+      <li>{{ s }}</li>
+      {% endfor %}
+    </ul>
+    {% endif %}
+    {% endif %}
+
+    <!-- Dark Web -->
+    {% if findings.get('darkweb') %}
+    <h3>Dark Web Exposure</h3>
+    {% set dw = findings.darkweb %}
+    {% if dw.get('breaches', {}).get('breaches') %}
+    <table>
+      <thead><tr><th>Source</th><th>Date</th><th>Records</th></tr></thead>
+      <tbody>
+        {% for b in dw.breaches.breaches %}
+        <tr>
+          <td>{{ b.name }}</td>
+          <td>{{ b.date }}</td>
+          <td>{{ b.get('pwn_count', 'N/A') }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% endif %}
+    {% if dw.get('ahmia', {}).get('results') %}
+    <h3>Tor Hidden Service Mentions</h3>
+    <table>
+      <thead><tr><th>Title</th><th>Description</th></tr></thead>
+      <tbody>
+        {% for r in dw.ahmia.results[:20] %}
+        <tr><td>{{ r.title }}</td><td>{{ r.description[:120] }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% endif %}
+    {% endif %}
+  </div>
+
+  <!-- Correlations: Timeline -->
+  {% if correlations and correlations.get('timeline') %}
+  <div class="section page-break">
+    <h2>Timeline</h2>
+    {% for event in correlations.timeline %}
+    <div class="timeline-item">
+      <div class="timeline-date">{{ event.date }}</div>
+      <div class="timeline-event">{{ event.event }} <span style="color:var(--muted);font-size:0.85em;">({{ event.source }})</span></div>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <!-- Correlations: Identities -->
+  {% if correlations and correlations.get('identities') %}
+  <div class="section">
+    <h2>Correlated Identities</h2>
+    <table>
+      <thead><tr><th>Type</th><th>Value</th><th>Sources</th><th>Confidence</th></tr></thead>
+      <tbody>
+        {% for ident in correlations.identities %}
+        <tr>
+          <td>{{ ident.type }}</td>
+          <td>{{ ident.value }}</td>
+          <td>{{ ident.get('sources', []) | join(', ') }}</td>
+          <td>{{ (ident.confidence * 100) | int }}%</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+
+  <!-- Risk Factors -->
+  {% if investigation.ai_analysis and investigation.ai_analysis.risk_assessment is defined %}
+  <div class="section">
+    <h2>Risk Assessment Details</h2>
+    {% set ra = investigation.ai_analysis.risk_assessment %}
+    {% if ra.risk_factors %}
+    <h3>Risk Factors</h3>
+    <ul class="findings-list">
+      {% for f in ra.risk_factors %}<li>{{ f }}</li>{% endfor %}
+    </ul>
+    {% endif %}
+    {% if ra.recommendations %}
+    <h3>Recommendations</h3>
+    <ul class="findings-list">
+      {% for r in ra.recommendations %}<li>{{ r }}</li>{% endfor %}
+    </ul>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  <!-- Errors -->
+  {% if investigation.errors %}
+  <div class="section">
+    <h2>Errors &amp; Warnings</h2>
+    <div class="error-box">
+      <ul>
+        {% for err in investigation.errors %}
+        <li>{{ err }}</li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Footer -->
+  <div class="report-footer">
+    <p>Generated by <strong>GHOST</strong> AI OSINT Platform &mdash; {{ generated_at }}</p>
+    <p style="margin-top:6px;font-size:0.8em;">This report is confidential and intended for authorized use only.<br>
+    All data was collected from publicly available sources. No unauthorized access was performed.</p>
+  </div>
+</div>
+</body>
+</html>
