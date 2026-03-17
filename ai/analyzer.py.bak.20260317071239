@@ -10,7 +10,6 @@ class AIAnalyzer:
     """AI-powered analysis of OSINT findings."""
 
     def __init__(self, config: Config):
-        """Initialize AIAnalyzer with configuration."""
         self.config = config
 
     async def analyze(
@@ -20,18 +19,7 @@ class AIAnalyzer:
         findings: dict[str, Any],
         correlations: dict,
     ) -> dict:
-        """
-        Run comprehensive AI analysis on investigation data.
-
-        Args:
-            target: Target entity for analysis.
-            input_type: Type of input data.
-            findings: Investigation findings.
-            correlations: Correlations between findings.
-
-        Returns:
-            AI analysis results or fallback analysis if AI is not available.
-        """
+        """Run comprehensive AI analysis on investigation data."""
         if not self.config.has_api_key("openai_api_key"):
             return self._fallback_analysis(findings)
 
@@ -98,15 +86,7 @@ Be objective, factual, and note uncertainty where applicable. Do not make unsupp
             return {"error": f"AI analysis failed: {e}"}
 
     def _sanitize_findings(self, findings: dict) -> dict:
-        """
-        Remove large/binary data and limit size for AI processing.
-
-        Args:
-            findings: Investigation findings.
-
-        Returns:
-            Sanitized findings for AI analysis.
-        """
+        """Remove large/binary data and limit size for AI processing."""
         sanitized = {}
         for module, data in findings.items():
             if isinstance(data, dict):
@@ -124,15 +104,7 @@ Be objective, factual, and note uncertainty where applicable. Do not make unsupp
         return sanitized
 
     def _fallback_analysis(self, findings: dict) -> dict:
-        """
-        Basic heuristic analysis when AI is not available.
-
-        Args:
-            findings: Investigation findings.
-
-        Returns:
-            Fallback analysis results.
-        """
+        """Basic heuristic analysis when AI is not available."""
         profile_count = 0
         breach_count = 0
         locations = set()
