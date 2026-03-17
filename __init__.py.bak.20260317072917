@@ -1,13 +1,16 @@
+# Import necessary modules
 import os
+import re
 import json
 from datetime import datetime
+
 
 class User:
     """
     Represents a user with a unique id and name.
     """
 
-    def __init__(self, user_id: int, name: str):
+    def __init__(self, user_id, name):
         """
         Initializes a User instance.
 
@@ -24,7 +27,7 @@ class UserRepository:
     Handles user data storage and retrieval.
     """
 
-    def __init__(self, data_file: str):
+    def __init__(self, data_file):
         """
         Initializes a UserRepository instance.
 
@@ -33,7 +36,7 @@ class UserRepository:
         """
         self.data_file = data_file
 
-    def load_users(self) -> list[User]:
+    def load_users(self):
         """
         Loads user data from the data file.
 
@@ -41,19 +44,13 @@ class UserRepository:
             list[User]: List of User instances.
         """
         if not os.path.exists(self.data_file):
-            # Return an empty list if the file does not exist
             return []
 
-        try:
-            with open(self.data_file, "r") as file:
-                data = json.load(file)
-                return [User(user["id"], user["name"]) for user in data]
-        except json.JSONDecodeError as e:
-            # Handle JSON decoding errors
-            print(f"Error loading users: {e}")
-            return []
+        with open(self.data_file, "r") as file:
+            data = json.load(file)
+            return [User(user["id"], user["name"]) for user in data]
 
-    def save_users(self, users: list[User]) -> None:
+    def save_users(self, users):
         """
         Saves user data to the data file.
 
@@ -70,7 +67,7 @@ class UserService:
     Provides user-related functionality.
     """
 
-    def __init__(self, repository: UserRepository):
+    def __init__(self, repository):
         """
         Initializes a UserService instance.
 
@@ -79,7 +76,7 @@ class UserService:
         """
         self.repository = repository
 
-    def get_user(self, user_id: int) -> User | None:
+    def get_user(self, user_id):
         """
         Retrieves a user by their id.
 
@@ -95,7 +92,7 @@ class UserService:
                 return user
         return None
 
-    def create_user(self, name: str) -> User:
+    def create_user(self, name):
         """
         Creates a new user with a unique id.
 
@@ -105,10 +102,6 @@ class UserService:
         Returns:
             User: User instance with a unique id.
         """
-        if not isinstance(name, str):
-            # Raise a TypeError if the name is not a string
-            raise TypeError("Name must be a string")
-
         users = self.repository.load_users()
         max_id = max(user.user_id for user in users) if users else 0
         user_id = max_id + 1
@@ -117,7 +110,7 @@ class UserService:
         return user
 
 
-def main() -> None:
+def main():
     """
     Demonstrates user service functionality.
     """
@@ -130,12 +123,9 @@ def main() -> None:
 
     # Retrieve a user by id
     retrieved_user = service.get_user(user.user_id)
-    if retrieved_user:
-        print(
-            f"Retrieved user with id {retrieved_user.user_id} and name {retrieved_user.name}"
-        )
-    else:
-        print("User not found")
+    print(
+        f"Retrieved user with id {retrieved_user.user_id} and name {retrieved_user.name}"
+    )
 
 
 if __name__ == "__main__":
