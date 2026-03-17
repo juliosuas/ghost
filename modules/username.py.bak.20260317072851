@@ -90,11 +90,6 @@ class UsernameModule:
     """
 
     def __init__(self, config: Config):
-        """Initialize the UsernameModule instance.
-
-        Args:
-            config (Config): Configuration instance.
-        """
         self.config = config
         self.timeout = aiohttp.ClientTimeout(total=config.request_timeout)
 
@@ -108,16 +103,13 @@ class UsernameModule:
         Returns:
             dict[str, Any]: Result dictionary.
         """
-        # Extract username from target string
-        username = self._extract_username(target)
-        if not username:
-            raise ValueError("Invalid username")
+        username = target.split("@")[-1] if "@" in target else target
+        username = username.strip().lower()
 
         found = []
         not_found = []
         errors = []
 
-        # Create a semaphore to limit concurrent requests
         semaphore = asyncio.Semaphore(self.config.max_concurrent_requests)
 
         async def check_platform(name: str, url_template: str, expected_status: int):
@@ -131,21 +123,15 @@ class UsernameModule:
             Returns:
                 None
             """
-            # Format URL with username
             url = url_template.format(username)
             async with semaphore:
                 try:
-                    # Create an aiohttp client session
                     async with aiohttp.ClientSession(timeout=self.timeout) as session:
-                        # Set User-Agent header
                         headers = {"User-Agent": self.config.user_agent}
-                        # Send GET request
                         async with session.get(
                             url, headers=headers, allow_redirects=False
                         ) as resp:
-                            # Check if response status code matches expected status
                             if resp.status == expected_status:
-                                # Add platform to found list
                                 found.append(
                                     {
                                         "platform": name,
@@ -154,20 +140,15 @@ class UsernameModule:
                                     }
                                 )
                             else:
-                                # Add platform to not_found list
                                 not_found.append(name)
                 except asyncio.TimeoutError:
-                    # Add error to errors list
                     errors.append({"platform": name, "error": "timeout"})
                 except Exception as e:
-                    # Add error to errors list
                     errors.append({"platform": name, "error": str(e)})
 
-        # Create tasks for checking each platform
         tasks = [
             check_platform(name, url_tpl, status) for name, url_tpl, status in PLATFORMS
         ]
-        # Run tasks concurrently
         await asyncio.gather(*tasks)
 
         # Also try sherlock/maigret if available
@@ -193,7 +174,6 @@ class UsernameModule:
             dict: Sherlock results.
         """
         try:
-            # Create subprocess to run sherlock
             proc = await asyncio.create_subprocess_exec(
                 "sherlock",
                 username,
@@ -203,5 +183,15 @@ class UsernameModule:
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
             )
-            # Wait for subprocess to finish
-            stdout, _ = await asyncio.wait
+            stdout, _ = await asyncio.wait_for(proc.communicate(), timeout=120)
+            lines = stdout.decode().strip().split("\n")
+            results = [
+                line.strip()
+                for line in lines
+                if line.startswith("[+") or "http" in line
+            ]
+            return {"available": True, "results": results}
+        except FileNotFoundError:
+            return {"available": False, "note": "sherlock not installed"}
+        except Exception as e:
+            return {"available": False, "error": str(e)}
