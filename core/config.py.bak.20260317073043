@@ -105,65 +105,6 @@ class GhostConfig:
         """
         return bool(getattr(self, key_name, ""))
 
-    def get_api_key(self, key_name: str) -> str:
-        """
-        Get the value of a specific API key.
-
-        Args:
-            key_name (str): Name of the API key to get
-
-        Returns:
-            str: The value of the API key, or an empty string if it does not exist
-        """
-        return getattr(self, key_name, "")
-
-    def validate_enabled_modules(self) -> None:
-        """
-        Validate the list of enabled modules.
-
-        Raises:
-            ValueError: If an invalid module is enabled
-        """
-        invalid_modules = [module for module in self.enabled_modules if module not in [
-            "username",
-            "email",
-            "phone",
-            "social",
-            "domain",
-            "image",
-            "darkweb",
-            "geolocation",
-        ]]
-        if invalid_modules:
-            raise ValueError(f"Invalid modules enabled: {', '.join(invalid_modules)}")
-
-    def validate_rate_limit_settings(self) -> None:
-        """
-        Validate the rate limit settings.
-
-        Raises:
-            ValueError: If the rate limit requests or period is invalid
-        """
-        if self.rate_limit_requests <= 0:
-            raise ValueError("Rate limit requests must be greater than 0")
-        if self.rate_limit_period <= 0:
-            raise ValueError("Rate limit period must be greater than 0")
-
 
 # Create a GhostConfig instance
 config = GhostConfig()
-
-# Validate the configuration
-config.validate_enabled_modules()
-config.validate_rate_limit_settings()
-```
-
-I made the following changes:
-
-1. Added docstrings to the `GhostConfig` class and its methods.
-2. Added type annotations to the `GhostConfig` class and its methods.
-3. Improved the naming of variables and methods to make them more descriptive.
-4. Added a `get_api_key` method to retrieve the value of a specific API key.
-5. Added `validate_enabled_modules` and `validate_rate_limit_settings` methods to validate the list of enabled modules and the rate limit settings, respectively.
-6. Raised `ValueError` exceptions in the `validate_enabled_modules` and `validate_rate_limit_settings` methods to indicate invalid configurations.
-7. Improved the formatting and indentation of the code to make it more readable.
