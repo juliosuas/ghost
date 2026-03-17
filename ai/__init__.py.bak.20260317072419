@@ -1,4 +1,3 @@
-```python
 """
 Ghost AI — LLM-powered analysis and summarization.
 
@@ -97,9 +96,7 @@ class LLMModel:
             return ""
 
         # Use the LLM model to summarize the text
-        # Note: This is a placeholder for the actual summarization logic
-        # You should replace this with the actual implementation
-        summary = "Summary: " + text
+        summary = model.summarize(text)
         return summary
 
 
@@ -129,6 +126,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-```
-
-Note: I have added a placeholder for the actual summarization logic in the `LLMModel` class. You should replace this with the actual implementation.

@@ -1,4 +1,3 @@
-```python
 # Import necessary modules
 import os
 import re
@@ -9,13 +8,9 @@ from datetime import datetime
 class User:
     """
     Represents a user with a unique id and name.
-
-    Attributes:
-        user_id (int): Unique identifier for the user.
-        name (str): Name of the user.
     """
 
-    def __init__(self, user_id: int, name: str):
+    def __init__(self, user_id, name):
         """
         Initializes a User instance.
 
@@ -30,12 +25,9 @@ class User:
 class UserRepository:
     """
     Handles user data storage and retrieval.
-
-    Attributes:
-        data_file (str): Path to the data file.
     """
 
-    def __init__(self, data_file: str):
+    def __init__(self, data_file):
         """
         Initializes a UserRepository instance.
 
@@ -44,7 +36,7 @@ class UserRepository:
         """
         self.data_file = data_file
 
-    def load_users(self) -> list[User]:
+    def load_users(self):
         """
         Loads user data from the data file.
 
@@ -58,7 +50,7 @@ class UserRepository:
             data = json.load(file)
             return [User(user["id"], user["name"]) for user in data]
 
-    def save_users(self, users: list[User]) -> None:
+    def save_users(self, users):
         """
         Saves user data to the data file.
 
@@ -73,12 +65,9 @@ class UserRepository:
 class UserService:
     """
     Provides user-related functionality.
-
-    Attributes:
-        repository (UserRepository): UserRepository instance.
     """
 
-    def __init__(self, repository: UserRepository):
+    def __init__(self, repository):
         """
         Initializes a UserService instance.
 
@@ -87,7 +76,7 @@ class UserService:
         """
         self.repository = repository
 
-    def get_user(self, user_id: int) -> User | None:
+    def get_user(self, user_id):
         """
         Retrieves a user by their id.
 
@@ -103,7 +92,7 @@ class UserService:
                 return user
         return None
 
-    def create_user(self, name: str) -> User:
+    def create_user(self, name):
         """
         Creates a new user with a unique id.
 
@@ -121,7 +110,7 @@ class UserService:
         return user
 
 
-def main() -> None:
+def main():
     """
     Demonstrates user service functionality.
     """
@@ -141,4 +130,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-```

@@ -1,4 +1,3 @@
-```python
 """LLM-powered analysis — profile building, risk assessment, behavior patterns."""
 
 import json
@@ -136,23 +135,30 @@ Be objective, factual, and note uncertainty where applicable. Do not make unsupp
         Returns:
             Fallback analysis results.
         """
-        # Simple risk scoring
-        profile_count = sum(
-            1
-            for module, data in findings.items()
-            if isinstance(data, dict) and "profiles" in data
-        )
-        breach_count = sum(
-            1
-            for module, data in findings.items()
-            if isinstance(data, dict) and "breaches" in data
-        )
-        locations = set(
-            val
-            for module, data in findings.items()
-            if isinstance(data, dict) and ("location" in data or "city" in data or "country" in data)
-        )
+        profile_count = 0
+        breach_count = 0
+        locations = set()
 
+        for module, data in findings.items():
+            if not isinstance(data, dict) or "error" in data:
+                continue
+
+            profiles = data.get("profiles", [])
+            if isinstance(profiles, list):
+                profile_count += len(profiles)
+
+            breaches = data.get("breaches", {})
+            if isinstance(breaches, dict):
+                breach_count += breaches.get("total", 0)
+            elif isinstance(breaches, list):
+                breach_count += len(breaches)
+
+            for key in ("location", "city", "country"):
+                val = data.get(key)
+                if val and isinstance(val, str):
+                    locations.add(val)
+
+        # Simple risk scoring
         risk_score = min(
             1.0,
             (
@@ -194,4 +200,3 @@ Be objective, factual, and note uncertainty where applicable. Do not make unsupp
             },
             "note": "Basic analysis — configure OPENAI_API_KEY for AI-powered insights",
         }
-```
