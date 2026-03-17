@@ -1,0 +1,1 @@
+"""Ghost test suite."""
