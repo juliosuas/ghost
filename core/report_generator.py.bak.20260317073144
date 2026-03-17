@@ -3,7 +3,6 @@
 import json
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Dict
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
@@ -23,7 +22,7 @@ class ReportGenerator:
 
     def generate_report(
         self,
-        investigation: Dict,
+        investigation: dict,
         output_format: str = "html",
         output_path: str = None,
     ) -> str:
@@ -38,28 +37,27 @@ class ReportGenerator:
         Returns:
             The output path of the generated report.
         """
-        if not isinstance(investigation, dict):
-            raise ValueError("Investigation must be a dictionary")
+        inv = investigation if isinstance(investigation, dict) else investigation.to_dict()
 
         if output_path is None:
-            inv_dir = INVESTIGATIONS_DIR / investigation["id"]
+            inv_dir = INVESTIGATIONS_DIR / inv["id"]
             inv_dir.mkdir(parents=True, exist_ok=True)
             ext = "json" if output_format == "json" else "html"
             output_path = str(inv_dir / f"report.{ext}")
 
         if output_format == "json":
-            return self._generate_json_report(investigation, output_path)
+            return self._generate_json_report(inv, output_path)
         elif output_format == "pdf":
-            return self._generate_pdf_report(investigation, output_path)
+            return self._generate_pdf_report(inv, output_path)
         else:
-            return self._generate_html_report(investigation, output_path)
+            return self._generate_html_report(inv, output_path)
 
-    def _generate_html_report(self, investigation: Dict, output_path: str) -> str:
+    def _generate_html_report(self, inv: dict, output_path: str) -> str:
         """
         Generate an HTML report.
 
         Args:
-            investigation: The investigation data.
+            inv: The investigation data.
             output_path: The path to save the report to.
 
         Returns:
@@ -67,33 +65,31 @@ class ReportGenerator:
         """
         try:
             template = self.env.get_template("report.html")
-        except Exception as e:
+        except Exception:
             # Fallback to inline template
-            self.env.from_string(self._fallback_template())
             template = self.env.from_string(self._fallback_template())
-            print(f"Warning: Failed to load template 'report.html': {e}")
 
         html = template.render(
-            investigation=investigation,
+            investigation=inv,
             generated_at=datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC"),
-            findings=investigation.get("findings", {}),
-            correlations=investigation.get("correlations", {}),
-            ai_analysis=investigation.get("ai_analysis", {}),
-            summary=investigation.get("summary", ""),
-            risk_score=investigation.get("risk_score", 0),
-            errors=investigation.get("errors", []),
+            findings=inv.get("findings", {}),
+            correlations=inv.get("correlations", {}),
+            ai_analysis=inv.get("ai_analysis", {}),
+            summary=inv.get("summary", ""),
+            risk_score=inv.get("risk_score", 0),
+            errors=inv.get("errors", []),
         )
 
         Path(output_path).parent.mkdir(parents=True, exist_ok=True)
         Path(output_path).write_text(html, encoding="utf-8")
         return output_path
 
-    def _generate_json_report(self, investigation: Dict, output_path: str) -> str:
+    def _generate_json_report(self, inv: dict, output_path: str) -> str:
         """
         Generate a JSON report.
 
         Args:
-            investigation: The investigation data.
+            inv: The investigation data.
             output_path: The path to save the report to.
 
         Returns:
@@ -101,23 +97,23 @@ class ReportGenerator:
         """
         Path(output_path).parent.mkdir(parents=True, exist_ok=True)
         Path(output_path).write_text(
-            json.dumps(investigation, indent=2, default=str), encoding="utf-8"
+            json.dumps(inv, indent=2, default=str), encoding="utf-8"
         )
         return output_path
 
-    def _generate_pdf_report(self, investigation: Dict, output_path: str) -> str:
+    def _generate_pdf_report(self, inv: dict, output_path: str) -> str:
         """
         Generate a PDF report via HTML intermediate.
 
         Args:
-            investigation: The investigation data.
+            inv: The investigation data.
             output_path: The path to save the report to.
 
         Returns:
             The output path of the generated report.
         """
         html_path = output_path.replace(".pdf", ".html")
-        self._generate_html_report(investigation, html_path)
+        self._generate_html_report(inv, html_path)
         try:
             from weasyprint import HTML
             HTML(filename=html_path).write_pdf(output_path)
@@ -141,20 +137,19 @@ class ReportGenerator:
 </html>"""
 
     @staticmethod
-    def _generate_pdf_report_intermediate(investigation: Dict, output_path: str) -> str:
+    def _generate_pdf_report_intermediate(inv: dict, output_path: str) -> str:
         """
         Generate an intermediate HTML report for PDF conversion.
 
         Args:
-            investigation: The investigation data.
+            inv: The investigation data.
             output_path: The path to save the report to.
 
         Returns:
             The output path of the generated report.
         """
         # Implement PDF intermediate generation logic here
-        # For now, just return the output path
-        return output_path
+        pass
 ```
 
 ```python
