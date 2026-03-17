@@ -4,7 +4,7 @@ import asyncio
 import re
 import socket
 import aiohttp
-from typing import Any, Dict
+from typing import Any
 
 from ghost.core.config import Config
 
@@ -13,26 +13,11 @@ class EmailModule:
     """Comprehensive email intelligence gathering."""
 
     def __init__(self, config: Config):
-        """
-        Initialize the EmailModule.
-
-        Args:
-            config: The configuration instance.
-        """
         self.config = config
         self.timeout = aiohttp.ClientTimeout(total=config.request_timeout)
 
-    async def run(self, target: str, input_type: str = "email") -> Dict[str, Any]:
-        """
-        Run all email OSINT checks.
-
-        Args:
-            target: The target email address.
-            input_type: The type of input (default: "email").
-
-        Returns:
-            A dictionary containing the results of the OSINT checks.
-        """
+    async def run(self, target: str, input_type: str = "email") -> dict[str, Any]:
+        """Run all email OSINT checks."""
         email = target.strip().lower()
 
         results = await asyncio.gather(
@@ -53,16 +38,8 @@ class EmailModule:
             "gravatar": results[4] if not isinstance(results[4], Exception) else {"error": str(results[4])},
         }
 
-    async def _validate_email(self, email: str) -> Dict[str, Any]:
-        """
-        Validate email format and check MX records.
-
-        Args:
-            email: The email address to validate.
-
-        Returns:
-            A dictionary containing the validation results.
-        """
+    async def _validate_email(self, email: str) -> dict:
+        """Validate email format and check MX records."""
         # Format check
         pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
         is_valid_format = bool(re.match(pattern, email))
@@ -93,16 +70,8 @@ class EmailModule:
             "disposable": self._is_disposable(domain),
         }
 
-    async def _check_breaches(self, email: str) -> Dict[str, Any]:
-        """
-        Check email against breach databases.
-
-        Args:
-            email: The email address to check.
-
-        Returns:
-            A dictionary containing the breach results.
-        """
+    async def _check_breaches(self, email: str) -> dict:
+        """Check email against breach databases."""
         breaches = []
 
         # HIBP API
@@ -138,16 +107,8 @@ class EmailModule:
             "api_available": self.config.has_api_key("hibp_api_key"),
         }
 
-    async def _discover_accounts(self, email: str) -> Dict[str, Any]:
-        """
-        Discover accounts associated with an email.
-
-        Args:
-            email: The email address to discover accounts for.
-
-        Returns:
-            A dictionary containing the account discovery results.
-        """
+    async def _discover_accounts(self, email: str) -> dict:
+        """Discover accounts associated with an email."""
         accounts = []
 
         # Check common services for account existence via password reset / signup
@@ -194,16 +155,8 @@ class EmailModule:
 
         return {"accounts": accounts, "count": len(accounts)}
 
-    async def _domain_info(self, email: str) -> Dict[str, Any]:
-        """
-        Get domain WHOIS information for the email domain.
-
-        Args:
-            email: The email address to get WHOIS information for.
-
-        Returns:
-            A dictionary containing the WHOIS information.
-        """
+    async def _domain_info(self, email: str) -> dict:
+        """Get domain WHOIS information for the email domain."""
         domain = email.split("@")[1]
         info = {"domain": domain}
 
@@ -223,16 +176,8 @@ class EmailModule:
 
         return info
 
-    async def _gravatar_check(self, email: str) -> Dict[str, Any]:
-        """
-        Check for Gravatar profile.
-
-        Args:
-            email: The email address to check.
-
-        Returns:
-            A dictionary containing the Gravatar profile information.
-        """
+    async def _gravatar_check(self, email: str) -> dict:
+        """Check for Gravatar profile."""
         import hashlib
         email_hash = hashlib.md5(email.strip().lower().encode()).hexdigest()
         profile_url = f"https://en.gravatar.com/{email_hash}.json"
@@ -261,15 +206,6 @@ class EmailModule:
             return {"error": str(e)}
 
     def _detect_provider(self, domain: str) -> str:
-        """
-        Detect the email provider based on the domain.
-
-        Args:
-            domain: The email domain.
-
-        Returns:
-            The detected email provider.
-        """
         providers = {
             "gmail.com": "Google",
             "googlemail.com": "Google",
@@ -283,4 +219,17 @@ class EmailModule:
             "proton.me": "ProtonMail",
             "tutanota.com": "Tutanota",
             "aol.com": "AOL",
-            "zoho.com": "
+            "zoho.com": "Zoho",
+            "yandex.com": "Yandex",
+            "mail.ru": "Mail.ru",
+        }
+        return providers.get(domain, "Custom/Corporate")
+
+    def _is_disposable(self, domain: str) -> bool:
+        disposable_domains = {
+            "tempmail.com", "throwaway.email", "guerrillamail.com",
+            "mailinator.com", "10minutemail.com", "trashmail.com",
+            "yopmail.com", "sharklasers.com", "guerrillamailblock.com",
+            "dispostable.com", "maildrop.cc", "temp-mail.org",
+        }
+        return domain in disposable_domains
