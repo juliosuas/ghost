@@ -3,7 +3,7 @@
 import asyncio
 import socket
 import aiohttp
-from typing import Any, Dict, Optional
+from typing import Any
 
 from ghost.core.config import Config
 
@@ -12,47 +12,29 @@ class GeolocationModule:
     """Geolocation and IP intelligence."""
 
     def __init__(self, config: Config):
-        """Initialize the geolocation module with the provided configuration."""
         self.config = config
         self.timeout = aiohttp.ClientTimeout(total=config.request_timeout)
 
-    async def run(self, target: str, input_type: str = "domain") -> Dict[str, Any]:
-        """Run geolocation intelligence gathering.
-
-        Args:
-            target: The target to gather geolocation data for.
-            input_type: The type of the input (default: "domain").
-
-        Returns:
-            A dictionary containing the gathered geolocation data.
-        """
+    async def run(self, target: str, input_type: str = "domain") -> dict[str, Any]:
+        """Run geolocation intelligence gathering."""
         # Resolve domain to IP if needed
         ip = await self._resolve_to_ip(target)
 
-        # Gather geolocation data using IP geolocation and Shodan
         results = await asyncio.gather(
-            self._ip_geolocation(ip) if ip else self._create_error_result("No IP"),
-            self._shodan_lookup(ip) if ip else self._create_error_result("No IP"),
+            self._ip_geolocation(ip) if ip else asyncio.coroutine(lambda: {"error": "No IP"})(),
+            self._shodan_lookup(ip) if ip else asyncio.coroutine(lambda: {"error": "No IP"})(),
             return_exceptions=True,
         )
 
-        # Consolidate and return the results
         return {
             "target": target,
             "resolved_ip": ip,
-            "geolocation": results[0] if not isinstance(results[0], Exception) else self._create_error_result(str(results[0])),
-            "shodan": results[1] if not isinstance(results[1], Exception) else self._create_error_result(str(results[1])),
+            "geolocation": results[0] if not isinstance(results[0], Exception) else {"error": str(results[0])},
+            "shodan": results[1] if not isinstance(results[1], Exception) else {"error": str(results[1])},
         }
 
-    async def _resolve_to_ip(self, target: str) -> Optional[str]:
-        """Resolve a hostname/domain to IP address.
-
-        Args:
-            target: The hostname or domain to resolve.
-
-        Returns:
-            The resolved IP address or None if resolution fails.
-        """
+    async def _resolve_to_ip(self, target: str) -> str | None:
+        """Resolve a hostname/domain to IP address."""
         target = target.replace("http://", "").replace("https://", "").split("/")[0]
 
         # Check if already an IP
@@ -67,15 +49,8 @@ class GeolocationModule:
         except socket.gaierror:
             return None
 
-    async def _ip_geolocation(self, ip: str) -> Dict[str, Any]:
-        """Get geolocation data for an IP address.
-
-        Args:
-            ip: The IP address to get geolocation data for.
-
-        Returns:
-            A dictionary containing the geolocation data.
-        """
+    async def _ip_geolocation(self, ip: str) -> dict:
+        """Get geolocation data for an IP address."""
         results = {}
 
         # IPInfo.io
@@ -144,15 +119,8 @@ class GeolocationModule:
 
         return results
 
-    async def _shodan_lookup(self, ip: str) -> Dict[str, Any]:
-        """Look up IP on Shodan for open ports and services.
-
-        Args:
-            ip: The IP address to look up on Shodan.
-
-        Returns:
-            A dictionary containing the Shodan lookup results.
-        """
+    async def _shodan_lookup(self, ip: str) -> dict:
+        """Look up IP on Shodan for open ports and services."""
         if not self.config.has_api_key("shodan_api_key"):
             return {"available": False, "note": "Shodan API key not configured"}
 
@@ -186,15 +154,3 @@ class GeolocationModule:
                     return {"available": True, "error": f"Status {resp.status}"}
         except Exception as e:
             return {"available": False, "error": str(e)}
-
-    @staticmethod
-    def _create_error_result(message: str) -> Dict[str, Any]:
-        """Create a dictionary representing an error result.
-
-        Args:
-            message: The error message.
-
-        Returns:
-            A dictionary containing the error result.
-        """
-        return {"error": message}
