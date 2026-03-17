@@ -1,8 +1,4 @@
-```python
-"""LLM-powered analysis — profile building, risk assessment, behavior patterns.
-
-Ghost is an AI-powered OSINT investigation platform that automates intelligence gathering across 500+ platforms with AI-driven correlation and professional reporting.
-"""
+"""LLM-powered analysis — profile building, risk assessment, behavior patterns."""
 
 import json
 from typing import Any, Dict, List, Optional
@@ -203,4 +199,3 @@ Be objective, factual, and note uncertainty where applicable. Do not make unsupp
             },
             "note": "Basic analysis — configure OPENAI_API_KEY for AI-powered insights",
         }
-```

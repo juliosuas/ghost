@@ -1,46 +1,8 @@
-```python
 """
 Ghost AI — LLM-powered analysis and summarization.
 
 This module provides a basic structure for a Large Language Model (LLM) powered analysis and summarization tool.
 It includes classes and functions for data preprocessing, model training, and summarization.
-
-## Installation
-
-To install Ghost, clone the repository and run the following commands:
-
-```bash
-git clone https://github.com/juliosuas/ghost.git
-cd ghost
-pip install -r requirements.txt
-cp .env.example .env  # Add your OpenAI API key
-python -m ghost.ui.cli
-```
-
-## Feature Requests
-
-We'd love to hear what you want Ghost to do! Drop a comment below with:
-
-- **What** you'd like to see
-- **Why** it would be useful
-- **How** you imagine it working (optional)
-
-## Reporting Issues
-
-Please report any bugs or issues by opening a separate issue with:
-
-- Steps to reproduce
-- Expected vs actual behavior
-- Your OS and Python version
-
-## Roadmap
-
-- [ ] Plugin system for custom modules
-- [ ] Geospatial timeline visualization
-- [ ] Team collaboration features
-- [ ] Telegram bot integration
-- [ ] STIX/TAXII export
-- [ ] Neo4j graph database backend
 """
 
 import logging
@@ -189,4 +151,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-```

@@ -1,4 +1,3 @@
-```python
 import os
 import json
 from datetime import datetime
@@ -106,9 +105,6 @@ class UserService:
 
         Returns:
             User: User instance with a unique id.
-
-        Raises:
-            TypeError: If the name is not a string.
         """
         if not isinstance(name, str):
             # Raise a TypeError if the name is not a string
@@ -145,4 +141,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-```
