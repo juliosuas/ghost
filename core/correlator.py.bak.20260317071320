@@ -1,18 +1,18 @@
 """AI-powered correlation engine — finds connections between data points."""
 
 import json
-from typing import Any, Dict
+from typing import Any
 
 from ghost.core.config import Config
+
 
 class Correlator:
     """Correlates findings across modules using AI and heuristic analysis."""
 
     def __init__(self, config: Config):
-        """Initialize the correlator with a configuration object."""
         self.config = config
 
-    async def correlate(self, findings: Dict[str, Any]) -> Dict:
+    async def correlate(self, findings: dict[str, Any]) -> dict:
         """Analyze all findings and identify connections and patterns."""
         correlations = {
             "identities": self._correlate_identities(findings),
@@ -23,7 +23,7 @@ class Correlator:
         }
         return correlations
 
-    def _correlate_identities(self, findings: Dict) -> list[Dict]:
+    def _correlate_identities(self, findings: dict) -> list[dict]:
         """Find identity overlaps across platforms."""
         identities = []
         seen_names = {}
@@ -76,7 +76,7 @@ class Correlator:
 
         return identities
 
-    def _find_connections(self, findings: Dict) -> list[Dict]:
+    def _find_connections(self, findings: dict) -> list[dict]:
         """Find connections between different data points."""
         connections = []
         all_usernames = set()
@@ -122,7 +122,7 @@ class Correlator:
 
         return connections
 
-    def _build_timeline(self, findings: Dict) -> list[Dict]:
+    def _build_timeline(self, findings: dict) -> list[dict]:
         """Extract and sort temporal events from findings."""
         events = []
 
@@ -162,7 +162,7 @@ class Correlator:
         events.sort(key=lambda x: x.get("date", ""))
         return events
 
-    def _correlate_locations(self, findings: Dict) -> list[Dict]:
+    def _correlate_locations(self, findings: dict) -> list[dict]:
         """Find location data across findings."""
         locations = []
 
@@ -193,7 +193,7 @@ class Correlator:
 
         return locations
 
-    async def _ai_correlate(self, findings: Dict) -> Dict:
+    async def _ai_correlate(self, findings: dict) -> dict:
         """Use LLM to find deeper correlations."""
         if not self.config.has_api_key("openai_api_key"):
             return {"note": "AI correlation unavailable — no API key configured"}
