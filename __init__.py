@@ -2,6 +2,7 @@ import os
 import json
 from datetime import datetime
 
+
 class User:
     """
     Represents a user with a unique id and name.

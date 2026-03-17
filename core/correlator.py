@@ -5,6 +5,7 @@ from typing import Any, Dict, List, Optional
 
 from ghost.core.config import Config
 
+
 class Correlator:
     """Correlates findings across modules using AI and heuristic analysis."""
 

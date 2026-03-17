@@ -8,6 +8,7 @@ from flask import Flask, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_marshmallow import Marshmallow
 
+
 def create_flask_app() -> Flask:
     """
     Creates a new Flask application instance.
@@ -18,6 +19,7 @@ def create_flask_app() -> Flask:
     app = Flask(__name__)
     return app
 
+
 def configure_database(app: Flask) -> None:
     """
     Configures the database connection for the Flask application.
@@ -27,6 +29,7 @@ def configure_database(app: Flask) -> None:
     """
     # Define the database connection URL
     app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///ghost.db"
+
 
 def initialize_db(app: Flask) -> None:
     """
@@ -40,6 +43,7 @@ def initialize_db(app: Flask) -> None:
     # Initialize the Marshmallow instance
     ma = Marshmallow(app)
 
+
 def import_modules(app: Flask) -> None:
     """
     Imports the routes and models for the Flask application.
@@ -49,6 +53,7 @@ def import_modules(app: Flask) -> None:
     """
     # Import routes and models
     from . import routes, models
+
 
 def main() -> None:
     """
@@ -62,6 +67,7 @@ def main() -> None:
     initialize_db(app)
     # Import routes and models
     import_modules(app)
+
 
 if __name__ == "__main__":
     main()

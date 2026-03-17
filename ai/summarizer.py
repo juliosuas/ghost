@@ -5,6 +5,7 @@ from typing import Any, Dict
 
 from ghost.core.config import Config
 
+
 class OSINTSummarizer:
     """Generate concise executive summaries of OSINT investigations."""
 
@@ -46,7 +47,9 @@ class OSINTSummarizer:
 
             client = openai.AsyncOpenAI(api_key=self.config.openai_api_key)
 
-            findings_brief = self._extract_key_findings(investigation.get("findings", {}))
+            findings_brief = self._extract_key_findings(
+                investigation.get("findings", {})
+            )
 
             prompt = self._create_prompt(investigation, findings_brief)
 
@@ -93,9 +96,7 @@ class OSINTSummarizer:
         findings = investigation.get("findings", {})
         risk_score = investigation.get("risk_score", 0)
 
-        sections = [
-            f"Investigation of {input_type} target: {target}"
-        ]
+        sections = [f"Investigation of {input_type} target: {target}"]
 
         # Count findings
         total_profiles = 0
@@ -167,7 +168,9 @@ class OSINTSummarizer:
                 findings_brief[module] = brief
         return findings_brief
 
-    def _create_prompt(self, investigation: Dict[str, Any], findings_brief: Dict[str, Any]) -> str:
+    def _create_prompt(
+        self, investigation: Dict[str, Any], findings_brief: Dict[str, Any]
+    ) -> str:
         """
         Create a prompt for the AI model.
 

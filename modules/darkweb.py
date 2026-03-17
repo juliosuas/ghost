@@ -6,6 +6,7 @@ from typing import Any, Dict
 
 from ghost.core.config import Config
 
+
 class DarkWebModule:
     """Dark web and underground intelligence gathering."""
 

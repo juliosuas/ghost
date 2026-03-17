@@ -24,9 +24,7 @@ class ImageModule:
         self.config = config
         self.timeout = aiohttp.ClientTimeout(total=config.request_timeout)
 
-    async def run(
-        self, target: str, input_type: str = "image"
-    ) -> Dict[str, Any]:
+    async def run(self, target: str, input_type: str = "image") -> Dict[str, Any]:
         """Analyze an image file or URL."""
         image_data = await self._load_image(target)
         if not image_data:
