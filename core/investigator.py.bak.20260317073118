@@ -3,7 +3,7 @@
 import asyncio
 import uuid
 from datetime import datetime, timezone
-from typing import Optional, Dict, List, Callable
+from typing import Optional, Dict, List
 
 from ghost.core.config import config
 from ghost.core.correlator import Correlator
@@ -138,9 +138,9 @@ class GhostInvestigator:
         self.analyzer = AIAnalyzer(self.config)
         self.summarizer = Summarizer(self.config)
         self.report_generator = ReportGenerator()
-        self._progress_callback: Optional[Callable] = None
+        self._progress_callback = None
 
-    def set_progress_callback(self, callback: Callable):
+    def set_progress_callback(self, callback):
         """
         Set the progress callback function.
 
@@ -180,9 +180,6 @@ class GhostInvestigator:
         """
         if input_type == "auto":
             input_type = _detect_input_type(target)
-
-        if not target:
-            raise ValueError("Target string is required")
 
         investigation = Investigation(target, input_type)
         investigation.status = "running"
@@ -265,4 +262,5 @@ class GhostInvestigator:
         Generate a report from an investigation.
 
         Args:
-            investigation (Investigation
+            investigation (Investigation): The investigation results.
+            format (str, optional): The format of the report. Defaults to "html".
