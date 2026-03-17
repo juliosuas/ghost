@@ -1,6 +1,4 @@
-"""
-Tests for Ghost investigation engine and backend.
-"""
+"""Tests for Ghost investigation engine and backend."""
 
 import asyncio
 import json
@@ -20,31 +18,24 @@ from ghost.backend.db import init_db, save_investigation, get_investigation, lis
 
 class TestInputDetection:
     def test_email(self):
-        """Test detection of email input type."""
         assert _detect_input_type("user@example.com") == "email"
 
     def test_phone_plus(self):
-        """Test detection of phone input type with international prefix."""
         assert _detect_input_type("+15551234567") == "phone"
 
     def test_phone_digits(self):
-        """Test detection of phone input type with digits only."""
         assert _detect_input_type("555-123-4567") == "phone"
 
     def test_domain(self):
-        """Test detection of domain input type."""
         assert _detect_input_type("example.com") == "domain"
 
     def test_domain_subdomain(self):
-        """Test detection of domain input type with subdomain."""
         assert _detect_input_type("sub.example.co.uk") == "domain"
 
     def test_name(self):
-        """Test detection of name input type."""
         assert _detect_input_type("John Doe") == "name"
 
     def test_username(self):
-        """Test detection of username input type."""
         assert _detect_input_type("johndoe") == "username"
 
 
@@ -52,7 +43,6 @@ class TestInputDetection:
 
 class TestInvestigationModel:
     def test_create(self):
-        """Test creation of investigation instance."""
         inv = Investigation("johndoe", "username")
         assert inv.target == "johndoe"
         assert inv.input_type == "username"
@@ -61,7 +51,6 @@ class TestInvestigationModel:
         assert isinstance(inv.id, str) and len(inv.id) == 36
 
     def test_to_dict(self):
-        """Test conversion of investigation to dictionary."""
         inv = Investigation("test@example.com", "email")
         d = inv.to_dict()
         assert d["target"] == "test@example.com"
@@ -71,7 +60,6 @@ class TestInvestigationModel:
         assert d["status"] == "pending"
 
     def test_to_dict_serializable(self):
-        """Test that investigation dictionary is serializable to JSON."""
         inv = Investigation("target", "username")
         inv.findings = {"username": {"profiles": [{"platform": "GitHub", "url": "https://github.com/target"}]}}
         d = inv.to_dict()
@@ -83,21 +71,17 @@ class TestInvestigationModel:
 
 class TestModuleRouting:
     def test_username_modules(self):
-        """Test modules for username input type."""
         assert "username" in INPUT_TYPE_MODULES["username"]
         assert "social" in INPUT_TYPE_MODULES["username"]
 
     def test_email_modules(self):
-        """Test modules for email input type."""
         assert "email" in INPUT_TYPE_MODULES["email"]
         assert "username" in INPUT_TYPE_MODULES["email"]
 
     def test_phone_modules(self):
-        """Test modules for phone input type."""
         assert "phone" in INPUT_TYPE_MODULES["phone"]
 
     def test_domain_modules(self):
-        """Test modules for domain input type."""
         assert "domain" in INPUT_TYPE_MODULES["domain"]
         assert "geolocation" in INPUT_TYPE_MODULES["domain"]
 
@@ -114,7 +98,6 @@ def _setup_test_db(tmp_path, monkeypatch):
 
 class TestDatabase:
     def test_save_and_retrieve(self):
-        """Test saving and retrieving investigation from database."""
         inv = Investigation("johndoe", "username")
         inv.status = "completed"
         inv.risk_score = 0.65
@@ -140,7 +123,6 @@ class TestDatabase:
         assert loaded["findings"]["username"]["found_count"] == 2
 
     def test_list_investigations(self):
-        """Test listing all investigations from database."""
         for i in range(3):
             inv = Investigation(f"target{i}", "username")
             save_investigation(inv.to_dict())
@@ -148,22 +130,18 @@ class TestDatabase:
         assert len(results) == 3
 
     def test_get_nonexistent(self):
-        """Test retrieving non-existent investigation from database."""
         assert get_investigation("nonexistent-id") is None
 
     def test_delete(self):
-        """Test deleting investigation from database."""
         inv = Investigation("todelete", "username")
         save_investigation(inv.to_dict())
         assert delete_investigation(inv.id) is True
         assert get_investigation(inv.id) is None
 
     def test_delete_nonexistent(self):
-        """Test deleting non-existent investigation from database."""
         assert delete_investigation("nope") is False
 
     def test_graph_data(self):
-        """Test retrieving graph data for investigation."""
         inv = Investigation("graphtest", "username")
         inv.findings = {
             "username": {
@@ -181,11 +159,9 @@ class TestDatabase:
         assert len(graph["nodes"]) >= 1
 
     def test_graph_nonexistent(self):
-        """Test retrieving graph data for non-existent investigation."""
         assert get_graph_data("nope") is None
 
     def test_entities_stored(self):
-        """Test storing entities for investigation."""
         inv = Investigation("entitytest", "email")
         inv.findings = {
             "email": {
@@ -250,4 +226,43 @@ class TestGhostInvestigator:
         MockDarkweb.return_value = mock_darkweb
 
         # Other modules (not called for username type)
-        for Mock in (MockEmail, MockPhone, MockDomain, MockImage, Mock
+        for Mock in (MockEmail, MockPhone, MockDomain, MockImage, MockGeo):
+            m = MagicMock()
+            m.run = AsyncMock(return_value={})
+            Mock.return_value = m
+
+        mock_correlator = MagicMock()
+        mock_correlator.correlate = AsyncMock(return_value={
+            "identities": [], "connections": [], "timeline": [], "locations": [],
+        })
+        MockCorrelator.return_value = mock_correlator
+
+        mock_analyzer = MagicMock()
+        mock_analyzer.analyze = AsyncMock(return_value={
+            "risk_score": 0.3,
+            "risk_assessment": {"risk_level": "low"},
+        })
+        MockAnalyzer.return_value = mock_analyzer
+
+        mock_summarizer = MagicMock()
+        mock_summarizer.summarize = AsyncMock(return_value="Test investigation summary.")
+        MockSummarizer.return_value = mock_summarizer
+
+        investigator = GhostInvestigator()
+        result = asyncio.get_event_loop().run_until_complete(
+            investigator.investigate_async("johndoe", "username")
+        )
+
+        assert result.status == "completed"
+        assert result.target == "johndoe"
+        assert "username" in result.findings
+        assert result.summary == "Test investigation summary."
+        mock_username.run.assert_called_once()
+
+    def test_progress_callback(self):
+        events = []
+        inv = GhostInvestigator.__new__(GhostInvestigator)
+        inv._progress_callback = lambda m, s, d: events.append((m, s, d))
+        inv._report_progress("test", "start", "testing")
+        assert len(events) == 1
+        assert events[0] == ("test", "start", "testing")
