@@ -8,31 +8,16 @@ from typing import Any
 from ghost.core.config import Config
 
 
-class SocialMediaAnalyzer:
+class SocialModule:
     """Deep social media intelligence gathering."""
 
     def __init__(self, config: Config):
-        """
-        Initialize the social media analyzer.
-
-        Args:
-            config (Config): The configuration object.
-        """
         self.config = config
         self.timeout = aiohttp.ClientTimeout(total=config.request_timeout)
 
-    async def analyze_profile(self, target: str, input_type: str = "username") -> dict[str, Any]:
-        """
-        Run social media deep dive on target.
-
-        Args:
-            target (str): The target username.
-            input_type (str, optional): The type of input. Defaults to "username".
-
-        Returns:
-            dict[str, Any]: The analysis result.
-        """
-        username = self._extract_username(target)
+    async def run(self, target: str, input_type: str = "username") -> dict[str, Any]:
+        """Run social media deep dive on target."""
+        username = target.split("@")[-1] if "@" in target else target.strip()
 
         results = await asyncio.gather(
             self._check_instagram(username),
@@ -45,7 +30,10 @@ class SocialMediaAnalyzer:
         )
 
         platforms = {}
-        for name, result in zip(["instagram", "twitter", "reddit", "tiktok", "github", "linkedin"], results):
+        names = [
+            "instagram", "twitter", "reddit", "tiktok", "github", "linkedin"
+        ]
+        for name, result in zip(names, results):
             if isinstance(result, Exception):
                 platforms[name] = {"error": str(result)}
             else:
@@ -76,15 +64,7 @@ class SocialMediaAnalyzer:
         }
 
     async def _check_instagram(self, username: str) -> dict:
-        """
-        Check Instagram profile.
-
-        Args:
-            username (str): The username.
-
-        Returns:
-            dict: The result.
-        """
+        """Check Instagram profile."""
         url = f"https://www.instagram.com/{username}/"
         try:
             async with aiohttp.ClientSession(timeout=self.timeout) as session:
@@ -104,15 +84,7 @@ class SocialMediaAnalyzer:
             return {"found": False, "error": str(e)}
 
     async def _check_twitter(self, username: str) -> dict:
-        """
-        Check Twitter/X profile using API if available.
-
-        Args:
-            username (str): The username.
-
-        Returns:
-            dict: The result.
-        """
+        """Check Twitter/X profile using API if available."""
         # Use bearer token if available
         if self.config.has_api_key("twitter_bearer_token"):
             try:
@@ -159,15 +131,7 @@ class SocialMediaAnalyzer:
             return {"found": False}
 
     async def _check_reddit(self, username: str) -> dict:
-        """
-        Check Reddit profile via public JSON API.
-
-        Args:
-            username (str): The username.
-
-        Returns:
-            dict: The result.
-        """
+        """Check Reddit profile via public JSON API."""
         try:
             async with aiohttp.ClientSession(timeout=self.timeout) as session:
                 url = f"https://www.reddit.com/user/{username}/about.json"
@@ -193,15 +157,7 @@ class SocialMediaAnalyzer:
             return {"found": False, "error": str(e)}
 
     async def _check_tiktok(self, username: str) -> dict:
-        """
-        Check TikTok profile.
-
-        Args:
-            username (str): The username.
-
-        Returns:
-            dict: The result.
-        """
+        """Check TikTok profile."""
         url = f"https://www.tiktok.com/@{username}"
         try:
             async with aiohttp.ClientSession(timeout=self.timeout) as session:
@@ -219,15 +175,7 @@ class SocialMediaAnalyzer:
             return {"found": False, "error": str(e)}
 
     async def _check_github(self, username: str) -> dict:
-        """
-        Check GitHub profile via public API.
-
-        Args:
-            username (str): The username.
-
-        Returns:
-            dict: The result.
-        """
+        """Check GitHub profile via public API."""
         try:
             async with aiohttp.ClientSession(timeout=self.timeout) as session:
                 url = f"https://api.github.com/users/{username}"
@@ -255,15 +203,7 @@ class SocialMediaAnalyzer:
             return {"found": False, "error": str(e)}
 
     async def _check_linkedin(self, username: str) -> dict:
-        """
-        Check LinkedIn profile (basic existence check).
-
-        Args:
-            username (str): The username.
-
-        Returns:
-            dict: The result.
-        """
+        """Check LinkedIn profile (basic existence check)."""
         url = f"https://www.linkedin.com/in/{username}"
         try:
             async with aiohttp.ClientSession(timeout=self.timeout) as session:
@@ -277,6 +217,3 @@ class SocialMediaAnalyzer:
                     }
         except Exception:
             return {"found": False}
-
-    def _extract_username(self, target: str) -> str:
-        """
