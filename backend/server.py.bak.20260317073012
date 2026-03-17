@@ -4,24 +4,28 @@ import asyncio
 import threading
 import json
 from pathlib import Path
-from typing import Dict, List
 
 from flask import Flask, request, jsonify, send_from_directory, abort
 from flask_cors import CORS
 
-from ghost.core.config import Config
+from ghost.core.config import config
 from ghost.core.investigator import GhostInvestigator, Investigation
-from ghost.backend.db import Database
+from ghost.backend.db import (
+    init_db,
+    save_investigation,
+    get_investigation,
+    list_investigations,
+    get_graph_data,
+)
 
 app = Flask(__name__, static_folder=str(Path(__file__).resolve().parent.parent / "ui"))
 CORS(app)
 
 # Initialise database on startup
-db = Database()
-db.init_db()
+init_db()
 
 # In-memory tracking of running investigations
-_running: Dict[str, str] = {}  # id -> status message
+_running: dict[str, str] = {}  # id -> status message
 
 
 # ── Static dashboard ────────────────────────────────────────────────
@@ -74,7 +78,7 @@ def start_investigation():
     investigator = GhostInvestigator()
     inv = Investigation(target, input_type)
     inv.status = "running"
-    db.save_investigation(inv.to_dict())
+    save_investigation(inv.to_dict())
 
     inv_id = inv.id
     _running[inv_id] = "starting"
@@ -88,12 +92,12 @@ def start_investigation():
             )
             # Overwrite with actual ID so DB record matches
             result.id = inv_id
-            db.save_investigation(result.to_dict())
+            save_investigation(result.to_dict())
         except Exception as e:
             inv.status = "error"
             inv.errors.append(str(e))
             inv.id = inv_id
-            db.save_investigation(inv.to_dict())
+            save_investigation(inv.to_dict())
         finally:
             _running.pop(inv_id, None)
             loop.close()
@@ -114,11 +118,11 @@ def list_all():
     """
     limit = request.args.get("limit", 50, type=int)
     offset = request.args.get("offset", 0, type=int)
-    return jsonify(db.list_investigations(limit, offset))
+    return jsonify(list_investigations(limit, offset))
 
 
 @app.route("/api/investigation/<investigation_id>", methods=["GET"])
-def get_one(investigation_id: str):
+def get_one(investigation_id):
     """
     Get full investigation results.
 
@@ -128,7 +132,7 @@ def get_one(investigation_id: str):
     Returns:
         A JSON response with the investigation results.
     """
-    inv = db.get_investigation(investigation_id)
+    inv = get_investigation(investigation_id)
     if not inv:
         abort(404)
     # If still running, add a hint
@@ -138,7 +142,7 @@ def get_one(investigation_id: str):
 
 
 @app.route("/api/investigation/<investigation_id>/graph", methods=["GET"])
-def get_entity_graph(investigation_id: str):
+def get_entity_graph(investigation_id):
     """
     Return D3.js force-directed graph data for an investigation.
 
@@ -148,7 +152,7 @@ def get_entity_graph(investigation_id: str):
     Returns:
         A JSON response with the graph data.
     """
-    data = db.get_graph_data(investigation_id)
+    data = get_graph_data(investigation_id)
     if data is None:
         abort(404)
     return jsonify(data)
@@ -166,7 +170,7 @@ def main():
     Returns:
         None
     """
-    app.run(host=Config().host, port=Config().port, debug=Config().debug)
+    app.run(host=config.host, port=config.port, debug=config.debug)
 
 
 if __name__ == "__main__":
@@ -194,13 +198,10 @@ config = Config()
 # ghost/core/investigator.py
 """Ghost investigator module."""
 
-import asyncio
-import json
-
 class GhostInvestigator:
     """Ghost investigator class."""
 
-    async def investigate_async(self, target: str, input_type: str, modules: List[str]):
+    def investigate_async(self, target, input_type, modules):
         """
         Investigate a target asynchronously.
 
@@ -213,20 +214,20 @@ class GhostInvestigator:
             A JSON response with the investigation results.
         """
         # TO DO: implement investigation logic
-        return {"result": "success"}
+        pass
 
 
 class Investigation:
     """Investigation class."""
 
-    def __init__(self, target: str, input_type: str):
+    def __init__(self, target, input_type):
         self.id = None
         self.target = target
         self.input_type = input_type
         self.status = "pending"
         self.errors = []
 
-    def to_dict(self) -> Dict:
+    def to_dict(self):
         """
         Convert the investigation to a dictionary.
 
@@ -267,7 +268,7 @@ class Database:
         # TO DO: implement database initialization logic
         pass
 
-    def save_investigation(self, investigation: Dict):
+    def save_investigation(self, investigation):
         """
         Save an investigation to the database.
 
@@ -280,7 +281,7 @@ class Database:
         # TO DO: implement investigation saving logic
         pass
 
-    def get_investigation(self, investigation_id: str) -> Dict:
+    def get_investigation(self, investigation_id):
         """
         Get an investigation from the database.
 
@@ -293,7 +294,7 @@ class Database:
         # TO DO: implement investigation retrieval logic
         pass
 
-    def list_investigations(self, limit: int, offset: int) -> List[Dict]:
+    def list_investigations(self, limit, offset):
         """
         List investigations from the database.
 
@@ -307,7 +308,7 @@ class Database:
         # TO DO: implement investigation listing logic
         pass
 
-    def get_graph_data(self, investigation_id: str) -> Dict:
+    def get_graph_data(self, investigation_id):
         """
         Get graph data for an investigation from the database.
 
