@@ -1,7 +1,7 @@
 """LLM-powered analysis — profile building, risk assessment, behavior patterns."""
 
 import json
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from ghost.core.config import Config
 
@@ -17,9 +17,9 @@ class AIAnalyzer:
         self,
         target: str,
         input_type: str,
-        findings: Dict[str, Any],
-        correlations: Dict,
-    ) -> Dict:
+        findings: dict[str, Any],
+        correlations: dict,
+    ) -> dict:
         """
         Run comprehensive AI analysis on investigation data.
 
@@ -41,7 +41,10 @@ class AIAnalyzer:
             client = openai.AsyncOpenAI(api_key=self.config.openai_api_key)
 
             # Prepare findings summary (truncated for token limits)
-            findings_text = self._sanitize_findings(findings)[:10000]
+            findings_text = json.dumps(
+                self._sanitize_findings(findings), indent=2, default=str
+            )[:10000]
+
             correlations_text = json.dumps(correlations, indent=2, default=str)[:3000]
 
             prompt = f"""You are an expert OSINT analyst. Analyze the following investigation data for target "{target}" (type: {input_type}).
@@ -90,14 +93,12 @@ Be objective, factual, and note uncertainty where applicable. Do not make unsupp
 
             return analysis
 
-        except json.JSONDecodeError as e:
-            # Handle JSON decoding errors explicitly
+        except json.JSONDecodeError:
             return {"error": "AI returned invalid JSON", "raw_response": content[:500]}
         except Exception as e:
-            # Handle other exceptions explicitly
             return {"error": f"AI analysis failed: {e}"}
 
-    def _sanitize_findings(self, findings: Dict[str, Any]) -> Dict:
+    def _sanitize_findings(self, findings: dict) -> dict:
         """
         Remove large/binary data and limit size for AI processing.
 
@@ -124,7 +125,7 @@ Be objective, factual, and note uncertainty where applicable. Do not make unsupp
                 sanitized[module] = str(data)[:500]
         return sanitized
 
-    def _fallback_analysis(self, findings: Dict[str, Any]) -> Dict:
+    def _fallback_analysis(self, findings: dict) -> dict:
         """
         Basic heuristic analysis when AI is not available.
 
