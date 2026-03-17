@@ -6,26 +6,16 @@ from typing import Any
 
 from ghost.core.config import Config
 
+
 class DarkWebModule:
     """Dark web and underground intelligence gathering."""
 
     def __init__(self, config: Config):
-        """
-        Initialize the DarkWebModule.
-
-        :param config: The configuration object.
-        """
         self.config = config
         self.timeout = aiohttp.ClientTimeout(total=config.request_timeout)
 
     async def run(self, target: str, input_type: str = "username") -> dict[str, Any]:
-        """
-        Run dark web monitoring checks.
-
-        :param target: The target to search for.
-        :param input_type: The type of input (default: "username").
-        :return: A dictionary containing the results of the checks.
-        """
+        """Run dark web monitoring checks."""
         results = await asyncio.gather(
             self._search_ahmia(target),
             self._check_breach_databases(target),
@@ -42,12 +32,7 @@ class DarkWebModule:
         return data
 
     async def _search_ahmia(self, query: str) -> dict:
-        """
-        Search Ahmia.fi — clearnet search engine for Tor hidden services.
-
-        :param query: The query to search for.
-        :return: A dictionary containing the search results.
-        """
+        """Search Ahmia.fi — clearnet search engine for Tor hidden services."""
         try:
             async with aiohttp.ClientSession(timeout=self.timeout) as session:
                 url = f"https://ahmia.fi/search/?q={query}"
@@ -75,12 +60,7 @@ class DarkWebModule:
             return {"results": [], "error": str(e)}
 
     async def _check_breach_databases(self, target: str) -> dict:
-        """
-        Check against known breach compilation databases.
-
-        :param target: The target to search for.
-        :return: A dictionary containing the breach data.
-        """
+        """Check against known breach compilation databases."""
         breaches = []
 
         # HIBP check
@@ -139,12 +119,7 @@ class DarkWebModule:
         }
 
     async def _check_paste_sites(self, target: str) -> dict:
-        """
-        Monitor paste sites for mentions of the target.
-
-        :param target: The target to search for.
-        :return: A dictionary containing the paste data.
-        """
+        """Monitor paste sites for mentions of the target."""
         pastes = []
 
         # Search public paste indices
@@ -181,12 +156,7 @@ class DarkWebModule:
         return {"pastes": pastes, "count": len(pastes)}
 
     async def _check_dehashed(self, target: str) -> dict:
-        """
-        Check DeHashed API for breach data (if configured).
-
-        :param target: The target to search for.
-        :return: A dictionary containing the DeHashed data.
-        """
+        """Check DeHashed API for breach data (if configured)."""
         # DeHashed requires paid API access
         return {
             "available": False,
