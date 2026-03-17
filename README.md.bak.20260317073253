@@ -10,20 +10,30 @@
 ## Overview
 ------------
 
-Ghost is a multi-vector intelligence gathering platform that utilizes AI-driven analysis to correlate data from over 500 platforms, providing actionable intelligence and professional reports.
+Ghost is a multi-vector intelligence gathering platform that uses AI-driven analysis to correlate data from 500+ platforms, providing actionable intelligence and professional reports.
 
-## Key Features
---------------
+## Why Ghost?
+-------------
 
-### AI-Powered Intelligence Gathering
+| Capability | Ghost | Maltego | SpiderFoot | Recon-ng |
+|---|:---:|:---:|:---:|:---:|
+| **AI-Powered Correlation** | ✅ | ❌ | ❌ | ❌ |
+| **500+ Platform Checks** | ✅ | ✅¹ | ✅ | ~100 |
+| **Professional HTML/PDF Reports** | ✅ | ✅ | ✅ | ❌ |
+| **Web Dashboard with Graphs** | ✅ | ✅ | ✅ | ❌ |
+| **Image/Face Analysis** | ✅ | ❌ | ❌ | ❌ |
+| **Dark Web Monitoring** | ✅ | Plugin | ✅ | ❌ |
+| **REST API** | ✅ | ❌ | ✅ | ❌ |
+| **Beautiful CLI** | ✅ | ❌ | ✅ | ✅ |
+| **100% Open Source** | ✅ | ❌ | ✅ | ✅ |
+| **Zero Cost** | ✅ | ❌ | ✅ | ✅ |
 
-- **Correlate data** from multiple sources with AI-driven analysis
-- **Risk Assessment** and threat profiling with automated scoring
-- **Entity Resolution** to connect fragmented identities into unified profiles
-- **Timeline Analysis** for chronological activity mapping
+<sup>¹ Requires paid transforms</sup>
+
+## Features
+------------
 
 ### Investigation Vectors
--------------------------
 
 | Module | Description | Status |
 |---|---|:---:|
@@ -35,13 +45,19 @@ Ghost is a multi-vector intelligence gathering platform that utilizes AI-driven 
 | 🕵️ **Social Media Deep Dive** | Instagram, X, Facebook, LinkedIn, TikTok, Reddit | ✅ |
 | 🌑 **Dark Web Monitoring** | Ahmia search, breach databases, paste sites | ✅ |
 
-### Output & Reporting
-----------------------
+### Intelligence Engine
 
-- **Professional Reports** in HTML, PDF, and JSON with network graphs and timelines
-- **Web Dashboard** with D3.js entity graphs, map view, and evidence gallery
-- **Beautiful CLI** with Rich-powered interactive interface and live progress
-- **REST API** for full programmatic access and automation pipelines
+- 🤖 **AI Correlation** — LLM-driven pattern recognition across all data sources
+- 📊 **Risk Assessment** — Automated risk scoring and threat profiling
+- 🧩 **Entity Resolution** — Connect fragmented identities into unified profiles
+- 📈 **Timeline Analysis** — Chronological activity mapping
+
+### Output & Reporting
+
+- 📄 **Professional Reports** — HTML, PDF, and JSON with network graphs and timelines
+- 🗺️ **Web Dashboard** — D3.js entity graphs, map view, evidence gallery
+- 🖥️ **Beautiful CLI** — Rich-powered interactive interface with live progress
+- 🔌 **REST API** — Full programmatic access for automation pipelines
 
 ## Installation
 --------------
@@ -201,3 +217,4 @@ By using Ghost, you agree to the following:
 | ❌ Prohibited Use |
 |---|
 | Stalk, harass, or intimidate any person |
+|
