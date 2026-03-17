@@ -3,7 +3,7 @@
 import asyncio
 import uuid
 from datetime import datetime, timezone
-from typing import Optional, Dict, List
+from typing import Optional
 
 from ghost.core.config import config
 from ghost.core.correlator import Correlator
@@ -32,15 +32,6 @@ INPUT_TYPE_MODULES = {
 
 
 def _detect_input_type(target: str) -> str:
-    """
-    Detect the input type based on the target string.
-
-    Args:
-        target (str): The target string to detect the input type from.
-
-    Returns:
-        str: The detected input type.
-    """
     if "@" in target and "." in target:
         return "email"
     if target.startswith("+") or target.replace("-", "").replace(" ", "").isdigit():
@@ -53,23 +44,7 @@ def _detect_input_type(target: str) -> str:
 
 
 class Investigation:
-    """
-    Represents a single investigation with all collected data.
-
-    Attributes:
-        id (str): Unique identifier for the investigation.
-        target (str): The target string for the investigation.
-        input_type (str): The detected input type for the investigation.
-        started_at (datetime): The timestamp when the investigation started.
-        completed_at (Optional[datetime]): The timestamp when the investigation completed.
-        status (str): The status of the investigation.
-        findings (Dict[str, Dict]): The findings from each module.
-        correlations (Dict): The correlations between findings.
-        ai_analysis (Dict): The AI analysis results.
-        summary (str): The summary of the investigation.
-        risk_score (float): The risk score of the investigation.
-        errors (List): The errors encountered during the investigation.
-    """
+    """Represents a single investigation with all collected data."""
 
     def __init__(self, target: str, input_type: str):
         self.id = str(uuid.uuid4())
@@ -78,20 +53,14 @@ class Investigation:
         self.started_at = datetime.now(timezone.utc)
         self.completed_at: Optional[datetime] = None
         self.status = "pending"
-        self.findings: Dict[str, Dict] = {}
-        self.correlations: Dict = {}
-        self.ai_analysis: Dict = {}
+        self.findings: dict = {}
+        self.correlations: dict = {}
+        self.ai_analysis: dict = {}
         self.summary: str = ""
         self.risk_score: float = 0.0
-        self.errors: List = []
+        self.errors: list = []
 
-    def to_dict(self) -> Dict:
-        """
-        Convert the investigation to a dictionary.
-
-        Returns:
-            Dict: The investigation as a dictionary.
-        """
+    def to_dict(self) -> dict:
         return {
             "id": self.id,
             "target": self.target,
@@ -109,18 +78,7 @@ class Investigation:
 
 
 class GhostInvestigator:
-    """
-    Main investigation orchestrator.
-
-    Attributes:
-        config (Dict): The configuration for the investigation.
-        _modules (Dict[str, Module]): The modules to run during the investigation.
-        correlator (Correlator): The correlator to use for correlations.
-        analyzer (AIAnalyzer): The AI analyzer to use for analysis.
-        summarizer (Summarizer): The summarizer to use for summaries.
-        report_generator (ReportGenerator): The report generator to use for reports.
-        _progress_callback (Optional[Callable]): The progress callback function.
-    """
+    """Main investigation orchestrator."""
 
     def __init__(self, config_override=None):
         self.config = config_override or config
@@ -141,43 +99,28 @@ class GhostInvestigator:
         self._progress_callback = None
 
     def set_progress_callback(self, callback):
-        """
-        Set the progress callback function.
-
-        Args:
-            callback (Callable): The progress callback function.
-        """
         self._progress_callback = callback
 
     def _report_progress(self, module: str, status: str, detail: str = ""):
-        """
-        Report progress to the progress callback function.
-
-        Args:
-            module (str): The module that is running.
-            status (str): The status of the module.
-            detail (str, optional): Additional detail about the module. Defaults to "".
-        """
         if self._progress_callback:
             self._progress_callback(module, status, detail)
+
+    def investigate(
+        self,
+        target: str,
+        input_type: str = "auto",
+        modules: Optional[list] = None,
+    ) -> Investigation:
+        """Run a full investigation synchronously."""
+        return asyncio.run(self.investigate_async(target, input_type, modules))
 
     async def investigate_async(
         self,
         target: str,
         input_type: str = "auto",
-        modules: Optional[List] = None,
+        modules: Optional[list] = None,
     ) -> Investigation:
-        """
-        Run a full investigation asynchronously.
-
-        Args:
-            target (str): The target string for the investigation.
-            input_type (str, optional): The detected input type for the investigation. Defaults to "auto".
-            modules (Optional[List], optional): The modules to run during the investigation. Defaults to None.
-
-        Returns:
-            Investigation: The investigation results.
-        """
+        """Run a full investigation asynchronously."""
         if input_type == "auto":
             input_type = _detect_input_type(target)
 
@@ -232,18 +175,7 @@ class GhostInvestigator:
     async def _run_module(
         self, name: str, target: str, input_type: str, investigation: Investigation
     ):
-        """
-        Run a single OSINT module with error handling.
-
-        Args:
-            name (str): The name of the module to run.
-            target (str): The target string for the module.
-            input_type (str): The detected input type for the module.
-            investigation (Investigation): The investigation results.
-
-        Returns:
-            Dict: The findings from the module.
-        """
+        """Run a single OSINT module with error handling."""
         self._report_progress(name, "running", f"Scanning {name}")
         try:
             module = self._modules[name]
@@ -258,9 +190,5 @@ class GhostInvestigator:
     def generate_report(
         self, investigation: Investigation, format: str = "html", output_path: str = None
     ) -> str:
-        """
-        Generate a report from an investigation.
-
-        Args:
-            investigation (Investigation): The investigation results.
-            format (str, optional): The format of the report. Defaults to "html".
+        """Generate a report from an investigation."""
+        return self.report_generator.generate(investigation, format, output_path)
