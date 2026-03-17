@@ -1,9 +1,10 @@
 """Generate executive summaries of investigations."""
 
 import json
-from typing import Any, Dict
+from typing import Any
 
 from ghost.core.config import Config
+
 
 class OSINTSummarizer:
     """Generate concise executive summaries of OSINT investigations."""
@@ -17,7 +18,7 @@ class OSINTSummarizer:
         """
         self.config = config
 
-    async def generate_summary(self, investigation: Dict[str, Any]) -> str:
+    async def generate_summary(self, investigation: dict) -> str:
         """
         Generate an executive summary of the investigation.
 
@@ -31,7 +32,7 @@ class OSINTSummarizer:
             return await self._generate_ai_summary(investigation)
         return self._generate_heuristic_summary(investigation)
 
-    async def _generate_ai_summary(self, investigation: Dict[str, Any]) -> str:
+    async def _generate_ai_summary(self, investigation: dict) -> str:
         """
         Generate an AI-powered executive summary.
 
@@ -46,7 +47,9 @@ class OSINTSummarizer:
 
             client = openai.AsyncOpenAI(api_key=self.config.openai_api_key)
 
-            findings_brief = self._extract_key_findings(investigation.get("findings", {}))
+            findings_brief = self._extract_key_findings(
+                investigation.get("findings", {})
+            )
 
             prompt = self._create_prompt(investigation, findings_brief)
 
@@ -65,20 +68,13 @@ class OSINTSummarizer:
 
             return response.choices[0].message.content.strip()
 
-        except openai.error.InvalidRequestError as e:
-            # Handle invalid request errors specifically
-            return (
-                self._generate_heuristic_summary(investigation)
-                + f"\n\n[AI summary unavailable: {e}]"
-            )
         except Exception as e:
-            # Handle other exceptions
             return (
                 self._generate_heuristic_summary(investigation)
                 + f"\n\n[AI summary unavailable: {e}]"
             )
 
-    def _generate_heuristic_summary(self, investigation: Dict[str, Any]) -> str:
+    def _generate_heuristic_summary(self, investigation: dict) -> str:
         """
         Generate a basic summary from findings data.
 
@@ -93,9 +89,7 @@ class OSINTSummarizer:
         findings = investigation.get("findings", {})
         risk_score = investigation.get("risk_score", 0)
 
-        sections = [
-            f"Investigation of {input_type} target: {target}"
-        ]
+        sections = [f"Investigation of {input_type} target: {target}"]
 
         # Count findings
         total_profiles = 0
@@ -136,7 +130,7 @@ class OSINTSummarizer:
 
         return "\n\n".join(sections)
 
-    def _extract_key_findings(self, findings: Dict[str, Any]) -> Dict[str, Any]:
+    def _extract_key_findings(self, findings: dict) -> dict:
         """
         Extract key findings from the provided findings data.
 
@@ -167,7 +161,7 @@ class OSINTSummarizer:
                 findings_brief[module] = brief
         return findings_brief
 
-    def _create_prompt(self, investigation: Dict[str, Any], findings_brief: Dict[str, Any]) -> str:
+    def _create_prompt(self, investigation: dict, findings_brief: dict) -> str:
         """
         Create a prompt for the AI model.
 
