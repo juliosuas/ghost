@@ -4,14 +4,9 @@ import asyncio
 import hashlib
 import io
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any
 
 import aiohttp
-from face_recognition import face_locations, face_encodings
-from geopy.geocoders import Nominatim
-from PIL import Image
-from exifread import process_file
-from PIL.ExifTags import TAGS
 
 from ghost.core.config import Config
 
@@ -23,7 +18,7 @@ class ImageModule:
         self.config = config
         self.timeout = aiohttp.ClientTimeout(total=config.request_timeout)
 
-    async def run(self, target: str, input_type: str = "image") -> Dict[str, Any]:
+    async def run(self, target: str, input_type: str = "image") -> dict[str, Any]:
         """Analyze an image file or URL."""
         image_data = await self._load_image(target)
         if not image_data:
@@ -66,10 +61,11 @@ class ImageModule:
                 return path.read_bytes()
         return None
 
-    async def _extract_exif(self, target: str, image_data: bytes) -> Dict[str, Any]:
+    async def _extract_exif(self, target: str, image_data: bytes) -> dict:
         """Extract EXIF metadata from image."""
         try:
-            tags = process_file(io.BytesIO(image_data), details=False)
+            import exifread
+            tags = exifread.process_file(io.BytesIO(image_data), details=False)
 
             exif = {}
             important_tags = {
@@ -103,6 +99,8 @@ class ImageModule:
         except ImportError:
             # Fallback to Pillow
             try:
+                from PIL import Image
+                from PIL.ExifTags import TAGS
                 img = Image.open(io.BytesIO(image_data))
                 exif_data = img._getexif()
                 if exif_data:
@@ -111,7 +109,7 @@ class ImageModule:
             except Exception as e:
                 return {"error": str(e)}
 
-    async def _reverse_image_search(self, target: str, image_data: bytes) -> Dict[str, Any]:
+    async def _reverse_image_search(self, target: str, image_data: bytes) -> dict:
         """Perform reverse image search."""
         results = {"engines": []}
 
@@ -152,14 +150,18 @@ class ImageModule:
 
         return results
 
-    async def _detect_faces(self, image_data: bytes) -> Dict[str, Any]:
+    async def _detect_faces(self, image_data: bytes) -> dict:
         """Detect faces in the image."""
         try:
+            import face_recognition
+            import numpy as np
+            from PIL import Image
+
             img = Image.open(io.BytesIO(image_data))
             img_array = np.array(img)
 
-            face_locations = face_locations(img_array)
-            face_encodings = face_encodings(img_array, face_locations)
+            face_locations = face_recognition.face_locations(img_array)
+            face_encodings = face_recognition.face_encodings(img_array, face_locations)
 
             faces = []
             for i, (location, encoding) in enumerate(zip(face_locations, face_encodings)):
@@ -176,10 +178,11 @@ class ImageModule:
         except Exception as e:
             return {"error": str(e)}
 
-    async def _extract_geolocation(self, target: str, image_data: bytes) -> Dict[str, Any]:
+    async def _extract_geolocation(self, target: str, image_data: bytes) -> dict:
         """Extract GPS coordinates from EXIF and resolve to address."""
         try:
-            tags = process_file(io.BytesIO(image_data))
+            import exifread
+            tags = exifread.process_file(io.BytesIO(image_data))
 
             lat = tags.get("GPS GPSLatitude")
             lat_ref = tags.get("GPS GPSLatitudeRef")
@@ -200,6 +203,7 @@ class ImageModule:
 
             # Reverse geocode
             try:
+                from geopy.geocoders import Nominatim
                 geolocator = Nominatim(user_agent="ghost-osint")
                 location = geolocator.reverse(f"{lat_decimal}, {lon_decimal}")
                 if location:
