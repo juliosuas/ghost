@@ -7,10 +7,6 @@ from datetime import datetime
 class User:
     """
     Represents a user with a unique id and name.
-
-    Attributes:
-        user_id (int): Unique identifier for the user.
-        name (str): Name of the user.
     """
 
     def __init__(self, user_id: int, name: str):
@@ -28,9 +24,6 @@ class User:
 class UserRepository:
     """
     Handles user data storage and retrieval.
-
-    Attributes:
-        data_file (str): Path to the data file.
     """
 
     def __init__(self, data_file: str):
@@ -77,9 +70,6 @@ class UserRepository:
 class UserService:
     """
     Provides user-related functionality.
-
-    Attributes:
-        repository (UserRepository): UserRepository instance.
     """
 
     def __init__(self, repository: UserRepository):

@@ -17,19 +17,7 @@ cp .env.example .env  # Add your OpenAI API key
 python -m ghost.ui.cli
 ```
 
-## Getting Started
-
-### Quick Install
-
-```bash
-git clone https://github.com/juliosuas/ghost.git
-cd ghost
-pip install -r requirements.txt
-cp .env.example .env  # Add your OpenAI API key
-python -m ghost.ui.cli
-```
-
-### Feature Requests
+## Feature Requests
 
 We'd love to hear what you want Ghost to do! Drop a comment below with:
 
@@ -37,7 +25,7 @@ We'd love to hear what you want Ghost to do! Drop a comment below with:
 - **Why** it would be useful
 - **How** you imagine it working (optional)
 
-### Reporting Issues
+## Reporting Issues
 
 Please report any bugs or issues by opening a separate issue with:
 
@@ -79,9 +67,6 @@ class DataProcessor:
 
         Args:
             text_data (List[str]): The list of text data to be preprocessed.
-
-        Raises:
-            ValueError: If the text data is empty.
         """
         if not text_data:
             raise ValueError("Text data cannot be empty")
@@ -116,9 +101,6 @@ class LLMModel:
 
         Args:
             model_path (str): The path to the trained LLM model.
-
-        Raises:
-            FileNotFoundError: If the model file does not exist.
         """
         if not os.path.exists(model_path):
             raise FileNotFoundError(f"Model file not found at {model_path}")
@@ -171,9 +153,6 @@ def load_text_data(file_path: str) -> List[str]:
 
     Returns:
         List[str]: The loaded text data.
-
-    Raises:
-        FileNotFoundError: If the file does not exist.
     """
     try:
         with open(file_path, "r") as f:
