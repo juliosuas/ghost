@@ -6,57 +6,49 @@ from typing import Any
 from ghost.core.config import Config
 
 
-class Summarizer:
+class OSINTSummarizer:
     """Generate concise executive summaries of OSINT investigations."""
 
     def __init__(self, config: Config):
+        """
+        Initialize the summarizer with the provided configuration.
+
+        Args:
+            config: The configuration to use for summarization.
+        """
         self.config = config
 
-    async def summarize(self, investigation) -> str:
-        """Generate an executive summary of the investigation."""
-        inv = investigation if isinstance(investigation, dict) else investigation.to_dict()
+    async def generate_summary(self, investigation: dict) -> str:
+        """
+        Generate an executive summary of the investigation.
 
+        Args:
+            investigation: The investigation to summarize.
+
+        Returns:
+            The executive summary as a string.
+        """
         if self.config.has_api_key("openai_api_key"):
-            return await self._ai_summary(inv)
-        return self._heuristic_summary(inv)
+            return await self._generate_ai_summary(investigation)
+        return self._generate_heuristic_summary(investigation)
 
-    async def _ai_summary(self, inv: dict) -> str:
-        """Generate AI-powered executive summary."""
+    async def _generate_ai_summary(self, investigation: dict) -> str:
+        """
+        Generate an AI-powered executive summary.
+
+        Args:
+            investigation: The investigation to summarize.
+
+        Returns:
+            The AI-powered executive summary as a string.
+        """
         try:
             import openai
             client = openai.AsyncOpenAI(api_key=self.config.openai_api_key)
 
-            findings_brief = {}
-            for module, data in inv.get("findings", {}).items():
-                if isinstance(data, dict) and "error" not in data:
-                    # Take only key fields
-                    brief = {}
-                    for k, v in data.items():
-                        if k in ("profiles", "found_count", "breaches", "total", "domain", "username", "email"):
-                            if isinstance(v, list) and len(v) > 5:
-                                brief[k] = f"{len(v)} items"
-                            else:
-                                brief[k] = v
-                    findings_brief[module] = brief
+            findings_brief = self._extract_key_findings(investigation.get("findings", {}))
 
-            prompt = f"""Write a concise executive summary (3-5 paragraphs) of this OSINT investigation.
-
-Target: {inv.get('target')}
-Type: {inv.get('input_type')}
-Risk Score: {inv.get('risk_score', 'N/A')}
-
-Key Findings:
-{json.dumps(findings_brief, indent=2, default=str)[:5000]}
-
-AI Analysis:
-{json.dumps(inv.get('ai_analysis', {}), indent=2, default=str)[:3000]}
-
-Write in a professional, objective tone suitable for a security report. Include:
-1. Overview of the investigation scope
-2. Key findings and their significance
-3. Risk assessment summary
-4. Notable connections or patterns
-5. Recommendations"""
+            prompt = self._create_prompt(investigation, findings_brief)
 
             response = await client.chat.completions.create(
                 model=self.config.openai_model,
@@ -71,14 +63,22 @@ Write in a professional, objective tone suitable for a security report. Include:
             return response.choices[0].message.content.strip()
 
         except Exception as e:
-            return self._heuristic_summary(inv) + f"\n\n[AI summary unavailable: {e}]"
+            return self._generate_heuristic_summary(investigation) + f"\n\n[AI summary unavailable: {e}]"
 
-    def _heuristic_summary(self, inv: dict) -> str:
-        """Generate a basic summary from findings data."""
-        target = inv.get("target", "Unknown")
-        input_type = inv.get("input_type", "unknown")
-        findings = inv.get("findings", {})
-        risk_score = inv.get("risk_score", 0)
+    def _generate_heuristic_summary(self, investigation: dict) -> str:
+        """
+        Generate a basic summary from findings data.
+
+        Args:
+            investigation: The investigation to summarize.
+
+        Returns:
+            The basic summary as a string.
+        """
+        target = investigation.get("target", "Unknown")
+        input_type = investigation.get("input_type", "unknown")
+        findings = investigation.get("findings", {})
+        risk_score = investigation.get("risk_score", 0)
 
         sections = [f"Investigation of {input_type} target: {target}"]
 
@@ -110,7 +110,60 @@ Write in a professional, objective tone suitable for a security report. Include:
         risk_level = "LOW" if risk_score < 0.4 else "MEDIUM" if risk_score < 0.7 else "HIGH"
         sections.append(f"Overall risk assessment: {risk_level} (score: {risk_score:.1%})")
 
-        if inv.get("errors"):
-            sections.append(f"Note: {len(inv['errors'])} module(s) encountered errors during collection.")
+        if investigation.get("errors"):
+            sections.append(f"Note: {len(investigation['errors'])} module(s) encountered errors during collection.")
 
         return "\n\n".join(sections)
+
+    def _extract_key_findings(self, findings: dict) -> dict:
+        """
+        Extract key findings from the provided findings data.
+
+        Args:
+            findings: The findings data to extract key findings from.
+
+        Returns:
+            A dictionary containing the key findings.
+        """
+        findings_brief = {}
+        for module, data in findings.items():
+            if isinstance(data, dict) and "error" not in data:
+                brief = {}
+                for k, v in data.items():
+                    if k in ("profiles", "found_count", "breaches", "total", "domain", "username", "email"):
+                        if isinstance(v, list) and len(v) > 5:
+                            brief[k] = f"{len(v)} items"
+                        else:
+                            brief[k] = v
+                findings_brief[module] = brief
+        return findings_brief
+
+    def _create_prompt(self, investigation: dict, findings_brief: dict) -> str:
+        """
+        Create a prompt for the AI model.
+
+        Args:
+            investigation: The investigation to summarize.
+            findings_brief: The key findings to include in the prompt.
+
+        Returns:
+            The prompt as a string.
+        """
+        return f"""Write a concise executive summary (3-5 paragraphs) of this OSINT investigation.
+
+Target: {investigation.get('target')}
+Type: {investigation.get('input_type')}
+Risk Score: {investigation.get('risk_score', 'N/A')}
+
+Key Findings:
+{json.dumps(findings_brief, indent=2, default=str)[:5000]}
+
+AI Analysis:
+{json.dumps(investigation.get('ai_analysis', {}), indent=2, default=str)[:3000]}
+
+Write in a professional, objective tone suitable for a security report. Include:
+1. Overview of the investigation scope
+2. Key findings and their significance
+3. Risk assessment summary
+4. Notable connections or patterns
+5. Recommendations"""
