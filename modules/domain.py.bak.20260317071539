@@ -13,27 +13,18 @@ import dns.resolver
 from ghost.core.config import Config
 
 
-class DomainIntelligence:
+class DomainModule:
     """Comprehensive domain intelligence gathering."""
 
     def __init__(self, config: Config):
-        """
-        Initialize the DomainIntelligence class.
-
-        :param config: The configuration object.
-        """
         self.config = config
         self.timeout = aiohttp.ClientTimeout(total=config.request_timeout)
 
-    async def gather_domain_intelligence(self, target: str, input_type: str = "domain") -> dict[str, Any]:
-        """
-        Run all domain OSINT checks.
+    async def run(self, target: str, input_type: str = "domain") -> dict[str, Any]:
+        """Run all domain OSINT checks."""
+        domain = target.strip().lower()
+        domain = domain.replace("http://", "").replace("https://", "").split("/")[0]
 
-        :param target: The target domain.
-        :param input_type: The type of input (default: "domain").
-        :return: A dictionary containing the results.
-        """
-        domain = self._normalize_domain(target.strip().lower())
         results = await asyncio.gather(
             self._whois_lookup(domain),
             self._dns_records(domain),
@@ -52,22 +43,8 @@ class DomainIntelligence:
         data["domain"] = domain
         return data
 
-    def _normalize_domain(self, domain: str) -> str:
-        """
-        Normalize the domain by removing any leading "http://" or "https://" and taking the first part.
-
-        :param domain: The domain to normalize.
-        :return: The normalized domain.
-        """
-        return domain.replace("http://", "").replace("https://", "").split("/")[0]
-
     async def _whois_lookup(self, domain: str) -> dict:
-        """
-        Get WHOIS information.
-
-        :param domain: The domain to query.
-        :return: A dictionary containing the WHOIS information.
-        """
+        """Get WHOIS information."""
         try:
             import whois
             w = whois.whois(domain)
@@ -87,12 +64,7 @@ class DomainIntelligence:
             return {"error": str(e)}
 
     async def _dns_records(self, domain: str) -> dict:
-        """
-        Enumerate DNS records.
-
-        :param domain: The domain to query.
-        :return: A dictionary containing the DNS records.
-        """
+        """Enumerate DNS records."""
         records = {}
         record_types = ["A", "AAAA", "MX", "NS", "TXT", "CNAME", "SOA", "SRV"]
 
@@ -108,12 +80,7 @@ class DomainIntelligence:
         return records
 
     async def _subdomain_enum(self, domain: str) -> dict:
-        """
-        Enumerate subdomains using various techniques.
-
-        :param domain: The domain to query.
-        :return: A dictionary containing the subdomains.
-        """
+        """Enumerate subdomains using various techniques."""
         subdomains = set()
 
         # crt.sh - Certificate Transparency logs
@@ -154,12 +121,7 @@ class DomainIntelligence:
         }
 
     async def _tech_stack(self, domain: str) -> dict:
-        """
-        Detect technology stack via headers and content analysis.
-
-        :param domain: The domain to query.
-        :return: A dictionary containing the technology stack information.
-        """
+        """Detect technology stack via headers and content analysis."""
         tech = {
             "server": None,
             "framework": [],
@@ -245,12 +207,7 @@ class DomainIntelligence:
         return tech
 
     async def _ssl_info(self, domain: str) -> dict:
-        """
-        Get SSL certificate information.
-
-        :param domain: The domain to query.
-        :return: A dictionary containing the SSL certificate information.
-        """
+        """Get SSL certificate information."""
         try:
             ctx = ssl.create_default_context()
             conn = ctx.wrap_socket(socket.socket(), server_hostname=domain)
@@ -267,4 +224,40 @@ class DomainIntelligence:
                 "subject": subject,
                 "issuer": issuer,
                 "version": cert.get("version"),
-                "serial_number": cert
+                "serial_number": cert.get("serialNumber"),
+                "not_before": cert.get("notBefore"),
+                "not_after": cert.get("notAfter"),
+                "san": san,
+                "ocsp": cert.get("OCSP", []),
+            }
+        except Exception as e:
+            return {"error": str(e)}
+
+    async def _wayback_history(self, domain: str) -> dict:
+        """Check Wayback Machine history."""
+        try:
+            async with aiohttp.ClientSession(timeout=self.timeout) as session:
+                # Get availability
+                url = f"https://archive.org/wayback/available?url={domain}"
+                async with session.get(url) as resp:
+                    if resp.status == 200:
+                        data = await resp.json()
+                        snapshot = data.get("archived_snapshots", {}).get("closest", {})
+
+                # Get calendar data (number of captures)
+                cdx_url = f"https://web.archive.org/cdx/search/cdx?url={domain}&output=json&limit=1&fl=timestamp"
+                first_capture = None
+                async with session.get(cdx_url) as resp:
+                    if resp.status == 200:
+                        data = await resp.json()
+                        if len(data) > 1:
+                            first_capture = data[1][0]
+
+                return {
+                    "available": bool(snapshot),
+                    "latest_snapshot": snapshot.get("url"),
+                    "latest_timestamp": snapshot.get("timestamp"),
+                    "first_capture": first_capture,
+                }
+        except Exception as e:
+            return {"error": str(e)}
