@@ -82,27 +82,14 @@ PLATFORMS = [
 
 
 class UsernameModule:
-    """Enumerate username across platforms.
-
-    Attributes:
-        config (Config): Configuration instance.
-        timeout (aiohttp.ClientTimeout): Timeout for HTTP requests.
-    """
+    """Enumerate username across platforms."""
 
     def __init__(self, config: Config):
         self.config = config
         self.timeout = aiohttp.ClientTimeout(total=config.request_timeout)
 
     async def run(self, target: str, input_type: str = "username") -> dict[str, Any]:
-        """Check username across all platforms.
-
-        Args:
-            target (str): Target username.
-            input_type (str, optional): Input type. Defaults to "username".
-
-        Returns:
-            dict[str, Any]: Result dictionary.
-        """
+        """Check username across all platforms."""
         username = target.split("@")[-1] if "@" in target else target
         username = username.strip().lower()
 
@@ -113,16 +100,6 @@ class UsernameModule:
         semaphore = asyncio.Semaphore(self.config.max_concurrent_requests)
 
         async def check_platform(name: str, url_template: str, expected_status: int):
-            """Check if username exists on a platform.
-
-            Args:
-                name (str): Platform name.
-                url_template (str): URL template.
-                expected_status (int): Expected status code.
-
-            Returns:
-                None
-            """
             url = url_template.format(username)
             async with semaphore:
                 try:
@@ -162,14 +139,7 @@ class UsernameModule:
         }
 
     async def _run_sherlock(self, username: str) -> dict:
-        """Attempt to run sherlock for additional coverage.
-
-        Args:
-            username (str): Username to check.
-
-        Returns:
-            dict: Sherlock results.
-        """
+        """Attempt to run sherlock for additional coverage."""
         try:
             proc = await asyncio.create_subprocess_exec(
                 "sherlock", username, "--print-found", "--timeout", "15",
