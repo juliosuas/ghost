@@ -1,5 +1,8 @@
-# Ghost: AI-Powered OSINT Investigation Platform
-=====================================================
+<div align="center">
+
+# 👻 GHOST
+
+### AI-Powered OSINT Investigation Platform
 
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-3776AB.svg?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg?style=for-the-badge)](LICENSE)
@@ -7,13 +10,17 @@
 [![GitHub Stars](https://img.shields.io/github/stars/juliosuas/ghost?style=for-the-badge&logo=github)](https://github.com/juliosuas/ghost/stargazers)
 [![GitHub Issues](https://img.shields.io/github/issues/juliosuas/ghost?style=for-the-badge)](https://github.com/juliosuas/ghost/issues)
 
-## Overview
-------------
+**Multi-vector intelligence gathering with 500+ platform checks, AI-driven analysis, and professional reports.**
 
-Ghost is a multi-vector intelligence gathering platform that uses AI-driven analysis to correlate data from 500+ platforms, providing actionable intelligence and professional reports.
+[Quick Start](#-quick-start) · [Features](#-features) · [Installation](#-installation) · [Documentation](#-usage) · [Roadmap](#-roadmap) · [Contributing](#-contributing)
 
-## Why Ghost?
--------------
+---
+
+*Automate OSINT investigations from a single target — name, email, phone, username, or photo — and let AI correlate everything into actionable intelligence.*
+
+</div>
+
+## 🔍 Why Ghost?
 
 | Capability | Ghost | Maltego | SpiderFoot | Recon-ng |
 |---|:---:|:---:|:---:|:---:|
@@ -30,8 +37,18 @@ Ghost is a multi-vector intelligence gathering platform that uses AI-driven anal
 
 <sup>¹ Requires paid transforms</sup>
 
-## Features
-------------
+## 📸 Screenshots
+
+> **Coming soon** — Screenshots of the CLI, web dashboard, entity graph, and report output.
+
+<!-- 
+<div align="center">
+  <img src="docs/screenshots/cli.png" width="45%" alt="Ghost CLI">
+  <img src="docs/screenshots/dashboard.png" width="45%" alt="Web Dashboard">
+</div>
+-->
+
+## ✨ Features
 
 ### Investigation Vectors
 
@@ -59,8 +76,7 @@ Ghost is a multi-vector intelligence gathering platform that uses AI-driven anal
 - 🖥️ **Beautiful CLI** — Rich-powered interactive interface with live progress
 - 🔌 **REST API** — Full programmatic access for automation pipelines
 
-## Installation
---------------
+## 📦 Installation
 
 ### From Source (Recommended)
 
@@ -86,8 +102,7 @@ docker-compose up -d
 # Dashboard → http://localhost:5000
 ```
 
-## Quick Start
---------------
+## ⚡ Quick Start
 
 ```bash
 # Interactive mode — guided investigation wizard
@@ -106,8 +121,7 @@ python -m ghost.ui.cli --target "+15551234567" --type phone
 python -m ghost.ui.cli --target "example.com" --type domain
 ```
 
-## Configuration
---------------
+## 🔧 Configuration
 
 Copy `.env.example` to `.env` and add your API keys:
 
@@ -122,8 +136,7 @@ Copy `.env.example` to `.env` and add your API keys:
 
 > **Note:** Ghost works with just an OpenAI key. Additional keys unlock more modules.
 
-## Usage
-------------
+## 📖 Usage
 
 ### Python API
 
@@ -147,8 +160,7 @@ curl -X POST http://localhost:5000/api/investigate \
   -d '{"target": "johndoe", "type": "username"}'
 ```
 
-## Architecture
---------------
+## 🏗️ Architecture
 
 ```
 ghost/
@@ -162,8 +174,7 @@ ghost/
 └── tests/          # Test suite
 ```
 
-## Roadmap
-------------
+## 🗺️ Roadmap
 
 - [ ] **Plugin System** — Drop-in custom modules with standard interface
 - [ ] **Geospatial Timeline** — Map-based activity visualization over time
@@ -174,8 +185,7 @@ ghost/
 - [ ] **Mobile App** — iOS/Android companion for field investigations
 - [ ] **Scheduled Monitoring** — Continuous target monitoring with alerts
 
-## Contributing
---------------
+## 🤝 Contributing
 
 Contributions are welcome! Here's how to get started:
 
@@ -193,14 +203,12 @@ Contributions are welcome! Here's how to get started:
 - 🎨 **Dashboard UI** — Frontend improvements, new visualizations
 - 🌐 **Translations** — i18n support for global users
 
-## Community
-------------
+## 💬 Community
 
 - [GitHub Discussions](https://github.com/juliosuas/ghost/discussions) — Questions, ideas, show & tell
 - [GitHub Issues](https://github.com/juliosuas/ghost/issues) — Bug reports & feature requests
 
-## Legal Disclaimer
--------------------
+## ⚠️ Legal Disclaimer
 
 > **This tool is provided for authorized security research, journalism, law enforcement, and personal use only.**
 
@@ -217,4 +225,23 @@ By using Ghost, you agree to the following:
 | ❌ Prohibited Use |
 |---|
 | Stalk, harass, or intimidate any person |
-|
+| Violate any person's reasonable expectation of privacy |
+| Conduct unauthorized surveillance |
+| Bypass access controls or terms of service |
+| Engage in any illegal activity |
+
+*If you are unsure whether your use case is lawful, consult a legal professional before proceeding.*
+
+## 📄 License
+
+MIT License — see [LICENSE](LICENSE) for details.
+
+---
+
+<div align="center">
+
+**Built with 👻 by [Julio](https://github.com/juliosuas)**
+
+*If Ghost helps your work, consider giving it a ⭐*
+
+</div>
