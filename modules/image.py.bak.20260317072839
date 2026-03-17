@@ -4,10 +4,9 @@ import asyncio
 import hashlib
 import io
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
 import aiohttp
-import numpy as np
 from face_recognition import face_locations, face_encodings
 from geopy.geocoders import Nominatim
 from PIL import Image
@@ -24,9 +23,7 @@ class ImageModule:
         self.config = config
         self.timeout = aiohttp.ClientTimeout(total=config.request_timeout)
 
-    async def run(
-        self, target: str, input_type: str = "image"
-    ) -> Dict[str, Any]:
+    async def run(self, target: str, input_type: str = "image") -> Dict[str, Any]:
         """Analyze an image file or URL."""
         image_data = await self._load_image(target)
         if not image_data:
@@ -55,7 +52,7 @@ class ImageModule:
 
         return data
 
-    async def _load_image(self, target: str) -> Optional[bytes]:
+    async def _load_image(self, target: str) -> bytes | None:
         """Load image from file path or URL."""
         if target.startswith(("http://", "https://")):
             try:
@@ -63,8 +60,7 @@ class ImageModule:
                     async with session.get(target) as resp:
                         if resp.status == 200:
                             return await resp.read()
-            except aiohttp.ClientError as e:
-                # Handle specific exception
+            except Exception:
                 return None
         else:
             path = Path(target)
@@ -156,9 +152,9 @@ class ImageModule:
                                         ],
                                     }
                                 )
-                except aiohttp.ClientError as e:
-                    # Handle specific exception
+                except Exception as e:
                     results["engines"].append({"engine": "Google", "error": str(e)})
+
         # Provide search URLs for manual checking
         if target.startswith("http"):
             results["manual_search_urls"] = {
@@ -242,7 +238,7 @@ class ImageModule:
             return {"found": False, "error": str(e)}
 
     @staticmethod
-    def _dms_to_decimal(dms: list, ref: str) -> float:
+    def _dms_to_decimal(dms, ref: str) -> float:
         """Convert degrees/minutes/seconds to decimal."""
         d = float(dms[0].num) / float(dms[0].den)
         m = float(dms[1].num) / float(dms[1].den)
