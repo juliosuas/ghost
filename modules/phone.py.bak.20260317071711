@@ -2,7 +2,7 @@
 
 import asyncio
 import aiohttp
-from typing import Any, Dict
+from typing import Any
 
 import phonenumbers
 from phonenumbers import carrier as pn_carrier, geocoder, timezone as pn_timezone
@@ -14,24 +14,11 @@ class PhoneModule:
     """Phone number intelligence gathering."""
 
     def __init__(self, config: Config):
-        """Initialize the PhoneModule instance.
-
-        Args:
-            config (Config): The configuration instance.
-        """
         self.config = config
         self.timeout = aiohttp.ClientTimeout(total=config.request_timeout)
 
-    async def run(self, target: str, input_type: str = "phone") -> Dict[str, Any]:
-        """Run all phone number OSINT checks.
-
-        Args:
-            target (str): The target phone number.
-            input_type (str, optional): The type of input. Defaults to "phone".
-
-        Returns:
-            Dict[str, Any]: The results of the OSINT checks.
-        """
+    async def run(self, target: str, input_type: str = "phone") -> dict[str, Any]:
+        """Run all phone number OSINT checks."""
         results = await asyncio.gather(
             self._parse_and_validate(target),
             self._check_spam_databases(target),
@@ -49,21 +36,12 @@ class PhoneModule:
 
         return base
 
-    async def _parse_and_validate(self, number: str) -> Dict[str, Any]:
-        """Parse, validate, and extract info from phone number.
-
-        Args:
-            number (str): The phone number to parse.
-
-        Returns:
-            Dict[str, Any]: The parsed phone number information.
-        """
+    async def _parse_and_validate(self, number: str) -> dict:
+        """Parse, validate, and extract info from phone number."""
         # Clean the number
         cleaned = number.strip().replace(" ", "").replace("-", "").replace("(", "").replace(")", "")
-
-        # Default to US if no country code is present
         if not cleaned.startswith("+"):
-            cleaned = "+1" + cleaned
+            cleaned = "+1" + cleaned  # Default to US
 
         try:
             parsed = phonenumbers.parse(cleaned)
@@ -115,15 +93,8 @@ class PhoneModule:
             "type": type_names.get(number_type, "UNKNOWN"),
         }
 
-    async def _check_spam_databases(self, number: str) -> Dict[str, Any]:
-        """Check number against spam/scam databases.
-
-        Args:
-            number (str): The phone number to check.
-
-        Returns:
-            Dict[str, Any]: The results of the spam database checks.
-        """
+    async def _check_spam_databases(self, number: str) -> dict:
+        """Check number against spam/scam databases."""
         reports = []
 
         # Check public spam lookup APIs
@@ -152,15 +123,8 @@ class PhoneModule:
 
         return {"reports": reports, "is_spam": False, "spam_score": 0}
 
-    async def _check_social_media(self, number: str) -> Dict[str, Any]:
-        """Check if the phone number is linked to social media accounts.
-
-        Args:
-            number (str): The phone number to check.
-
-        Returns:
-            Dict[str, Any]: The results of the social media checks.
-        """
+    async def _check_social_media(self, number: str) -> dict:
+        """Check if the phone number is linked to social media accounts."""
         linked_accounts = []
 
         # Note: Actual social media lookups would require specific APIs
