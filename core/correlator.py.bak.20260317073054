@@ -1,9 +1,10 @@
 """AI-powered correlation engine — finds connections between data points."""
 
 import json
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict
 
 from ghost.core.config import Config
+
 
 class Correlator:
     """Correlates findings across modules using AI and heuristic analysis."""
@@ -23,11 +24,11 @@ class Correlator:
         }
         return correlations
 
-    def _correlate_identities(self, findings: Dict) -> List[Dict]:
+    def _correlate_identities(self, findings: Dict) -> list[Dict]:
         """Find identity overlaps across platforms."""
         identities = []
-        seen_names: Dict[str, List[str]] = {}
-        seen_emails: Dict[str, List[str]] = {}
+        seen_names = {}
+        seen_emails = {}
 
         for module, data in findings.items():
             if isinstance(data, dict) and "error" not in data:
@@ -80,11 +81,11 @@ class Correlator:
 
         return identities
 
-    def _find_connections(self, findings: Dict) -> List[Dict]:
+    def _find_connections(self, findings: Dict) -> list[Dict]:
         """Find connections between different data points."""
         connections = []
-        all_usernames: Set[str] = set()
-        all_domains: Set[str] = set()
+        all_usernames = set()
+        all_domains = set()
 
         for module, data in findings.items():
             if not isinstance(data, dict) or "error" in data:
@@ -131,7 +132,7 @@ class Correlator:
 
         return connections
 
-    def _build_timeline(self, findings: Dict) -> List[Dict]:
+    def _build_timeline(self, findings: Dict) -> list[Dict]:
         """Extract and sort temporal events from findings."""
         events = []
 
@@ -181,7 +182,7 @@ class Correlator:
         events.sort(key=lambda x: x.get("date", ""))
         return events
 
-    def _correlate_locations(self, findings: Dict) -> List[Dict]:
+    def _correlate_locations(self, findings: Dict) -> list[Dict]:
         """Find location data across findings."""
         locations = []
 
@@ -265,9 +266,5 @@ Respond in JSON with keys: connections, patterns, aliases, risks, confidence_not
             if content.startswith("```"):
                 content = content.split("\n", 1)[1].rsplit("```", 1)[0]
             return json.loads(content)
-        except openai.error.InvalidRequestError as e:
-            return {"error": f"Invalid AI request: {e}"}
-        except openai.error.RateLimitError as e:
-            return {"error": f"Rate limit exceeded: {e}"}
         except Exception as e:
             return {"error": f"AI correlation failed: {e}"}
