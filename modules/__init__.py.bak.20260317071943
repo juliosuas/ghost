@@ -1,0 +1,1 @@
+"""Ghost OSINT collection modules."""
