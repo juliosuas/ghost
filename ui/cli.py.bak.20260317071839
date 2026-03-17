@@ -39,7 +39,6 @@ DISCLAIMER = (
 
 
 def print_banner():
-    """Print the Ghost CLI banner."""
     console.print(Panel(
         Text(BANNER, style="bold green", justify="center"),
         border_style="green",
@@ -50,7 +49,6 @@ def print_banner():
 
 
 def create_progress():
-    """Create a progress bar with a green spinner."""
     return Progress(
         SpinnerColumn(style="green"),
         TextColumn("[bold green]{task.description}"),
@@ -249,4 +247,57 @@ def display_results(investigation):
     # Findings tree
     tree = Tree("[bold green]Investigation Findings[/bold green]")
     for module, data in inv.get("findings", {}).items():
-        if isinstance(data,
+        if isinstance(data, dict) and "error" not in data:
+            branch = tree.add(f"[green]{module}[/green]")
+            _add_dict_to_tree(branch, data, depth=0, max_depth=2)
+        elif isinstance(data, dict) and "error" in data:
+            tree.add(f"[red]{module}: {data['error']}[/red]")
+
+    console.print(tree)
+
+    # Errors
+    if inv.get("errors"):
+        console.print()
+        err_table = Table(title="Errors", border_style="red", box=box.ROUNDED)
+        err_table.add_column("Error", style="red")
+        for err in inv["errors"]:
+            err_table.add_row(str(err))
+        console.print(err_table)
+
+
+def _add_dict_to_tree(tree, data, depth=0, max_depth=2):
+    """Recursively add dict data to a Rich tree."""
+    if depth >= max_depth:
+        return
+
+    if isinstance(data, dict):
+        for key, val in data.items():
+            if key in ("raw", "all_tags", "encoding"):
+                continue
+            if isinstance(val, dict):
+                branch = tree.add(f"[dim]{key}:[/dim]")
+                _add_dict_to_tree(branch, val, depth + 1, max_depth)
+            elif isinstance(val, list):
+                if len(val) == 0:
+                    tree.add(f"[dim]{key}:[/dim] []")
+                elif len(val) <= 3:
+                    branch = tree.add(f"[dim]{key}:[/dim]")
+                    for item in val:
+                        if isinstance(item, dict):
+                            sub = branch.add("")
+                            _add_dict_to_tree(sub, item, depth + 1, max_depth)
+                        else:
+                            branch.add(str(item)[:100])
+                else:
+                    tree.add(f"[dim]{key}:[/dim] [{len(val)} items]")
+            else:
+                val_str = str(val)[:100]
+                tree.add(f"[dim]{key}:[/dim] {val_str}")
+
+
+def main():
+    cli()
+
+
+if __name__ == "__main__":
+    main()
