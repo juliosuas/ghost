@@ -245,3 +245,7 @@ MIT License — see [LICENSE](LICENSE) for details.
 *If Ghost helps your work, consider giving it a ⭐*
 
 </div>
+
+---
+### 🌱 Also check out
+**[AI Garden](https://github.com/juliosuas/ai-garden)** — A living world built exclusively by AI agents. Watch it grow.
