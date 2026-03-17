@@ -75,9 +75,18 @@ class GhostConfig:
     rate_limit_period: int = int(os.getenv("RATE_LIMIT_PERIOD", "60"))
 
     # Module toggles
-    enabled_modules: list = field(default_factory=lambda: [
-        "username", "email", "phone", "social", "domain", "image", "darkweb", "geolocation"
-    ])
+    enabled_modules: list = field(
+        default_factory=lambda: [
+            "username",
+            "email",
+            "phone",
+            "social",
+            "domain",
+            "image",
+            "darkweb",
+            "geolocation",
+        ]
+    )
 
     # Request settings
     request_timeout: int = 30

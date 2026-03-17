@@ -37,6 +37,7 @@ class AIAnalyzer:
 
         try:
             import openai
+
             client = openai.AsyncOpenAI(api_key=self.config.openai_api_key)
 
             # Prepare findings summary (truncated for token limits)
@@ -111,7 +112,8 @@ Be objective, factual, and note uncertainty where applicable. Do not make unsupp
         for module, data in findings.items():
             if isinstance(data, dict):
                 sanitized[module] = {
-                    k: v for k, v in data.items()
+                    k: v
+                    for k, v in data.items()
                     if k not in ("raw", "encoding", "all_tags", "html")
                     and not isinstance(v, bytes)
                 }
@@ -157,15 +159,20 @@ Be objective, factual, and note uncertainty where applicable. Do not make unsupp
                     locations.add(val)
 
         # Simple risk scoring
-        risk_score = min(1.0, (
-            (0.1 if profile_count > 5 else 0) +
-            (0.2 if profile_count > 15 else 0) +
-            (0.3 if breach_count > 0 else 0) +
-            (0.2 if breach_count > 5 else 0) +
-            0.1  # Base risk for any digital presence
-        ))
+        risk_score = min(
+            1.0,
+            (
+                (0.1 if profile_count > 5 else 0)
+                + (0.2 if profile_count > 15 else 0)
+                + (0.3 if breach_count > 0 else 0)
+                + (0.2 if breach_count > 5 else 0)
+                + 0.1  # Base risk for any digital presence
+            ),
+        )
 
-        risk_level = "low" if risk_score < 0.4 else "medium" if risk_score < 0.7 else "high"
+        risk_level = (
+            "low" if risk_score < 0.4 else "medium" if risk_score < 0.7 else "high"
+        )
 
         return {
             "risk_score": risk_score,
@@ -174,8 +181,16 @@ Be objective, factual, and note uncertainty where applicable. Do not make unsupp
                 "risk_level": risk_level,
                 "risk_factors": [
                     f"Found on {profile_count} platforms",
-                    f"Involved in {breach_count} data breaches" if breach_count else "No known breaches",
-                    f"Location data found: {', '.join(locations)}" if locations else "No location data found",
+                    (
+                        f"Involved in {breach_count} data breaches"
+                        if breach_count
+                        else "No known breaches"
+                    ),
+                    (
+                        f"Location data found: {', '.join(locations)}"
+                        if locations
+                        else "No location data found"
+                    ),
                 ],
             },
             "digital_footprint": {

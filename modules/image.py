@@ -40,7 +40,9 @@ class ImageModule:
         keys = ["exif", "reverse_search", "faces", "geolocation"]
         data = {"source": target}
         for key, result in zip(keys, results):
-            data[key] = result if not isinstance(result, Exception) else {"error": str(result)}
+            data[key] = (
+                result if not isinstance(result, Exception) else {"error": str(result)}
+            )
 
         # Image hash for tracking
         data["hashes"] = {
@@ -97,7 +99,9 @@ class ImageModule:
                     exif[name] = str(tags[tag])
 
             # All tags for completeness
-            exif["all_tags"] = {str(k): str(v) for k, v in tags.items() if k != "JPEGThumbnail"}
+            exif["all_tags"] = {
+                str(k): str(v) for k, v in tags.items() if k != "JPEGThumbnail"
+            }
 
             return exif
         except ImportError:
@@ -106,17 +110,25 @@ class ImageModule:
                 img = Image.open(io.BytesIO(image_data))
                 exif_data = img._getexif()
                 if exif_data:
-                    return {TAGS.get(k, k): str(v) for k, v in exif_data.items() if isinstance(v, (str, int, float))}
+                    return {
+                        TAGS.get(k, k): str(v)
+                        for k, v in exif_data.items()
+                        if isinstance(v, (str, int, float))
+                    }
                 return {"note": "No EXIF data found"}
             except Exception as e:
                 return {"error": str(e)}
 
-    async def _reverse_image_search(self, target: str, image_data: bytes) -> Dict[str, Any]:
+    async def _reverse_image_search(
+        self, target: str, image_data: bytes
+    ) -> Dict[str, Any]:
         """Perform reverse image search."""
         results = {"engines": []}
 
         # Google Custom Search (if API key available)
-        if self.config.has_api_key("google_api_key") and self.config.has_api_key("google_cx"):
+        if self.config.has_api_key("google_api_key") and self.config.has_api_key(
+            "google_cx"
+        ):
             if target.startswith("http"):
                 try:
                     async with aiohttp.ClientSession(timeout=self.timeout) as session:
@@ -131,13 +143,15 @@ class ImageModule:
                             if resp.status == 200:
                                 data = await resp.json()
                                 items = data.get("items", [])
-                                results["engines"].append({
-                                    "engine": "Google",
-                                    "matches": [
-                                        {"title": i["title"], "url": i["link"]}
-                                        for i in items[:10]
-                                    ],
-                                })
+                                results["engines"].append(
+                                    {
+                                        "engine": "Google",
+                                        "matches": [
+                                            {"title": i["title"], "url": i["link"]}
+                                            for i in items[:10]
+                                        ],
+                                    }
+                                )
                 except Exception as e:
                     results["engines"].append({"engine": "Google", "error": str(e)})
 
@@ -162,13 +176,22 @@ class ImageModule:
             face_encodings = face_encodings(img_array, face_locations)
 
             faces = []
-            for i, (location, encoding) in enumerate(zip(face_locations, face_encodings)):
+            for i, (location, encoding) in enumerate(
+                zip(face_locations, face_encodings)
+            ):
                 top, right, bottom, left = location
-                faces.append({
-                    "id": i,
-                    "bounding_box": {"top": top, "right": right, "bottom": bottom, "left": left},
-                    "encoding_hash": hashlib.md5(encoding.tobytes()).hexdigest(),
-                })
+                faces.append(
+                    {
+                        "id": i,
+                        "bounding_box": {
+                            "top": top,
+                            "right": right,
+                            "bottom": bottom,
+                            "left": left,
+                        },
+                        "encoding_hash": hashlib.md5(encoding.tobytes()).hexdigest(),
+                    }
+                )
 
             return {"face_count": len(faces), "faces": faces}
         except ImportError:
@@ -176,7 +199,9 @@ class ImageModule:
         except Exception as e:
             return {"error": str(e)}
 
-    async def _extract_geolocation(self, target: str, image_data: bytes) -> Dict[str, Any]:
+    async def _extract_geolocation(
+        self, target: str, image_data: bytes
+    ) -> Dict[str, Any]:
         """Extract GPS coordinates from EXIF and resolve to address."""
         try:
             tags = process_file(io.BytesIO(image_data))

@@ -1,4 +1,5 @@
 """Ghost backend — Flask API and database layer."""
+
 """
 This module sets up the Flask API and database layer for the Ghost backend.
 """
@@ -11,7 +12,7 @@ from flask_marshmallow import Marshmallow
 app = Flask(__name__)
 
 # Define the database connection URL
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///ghost.db'
+app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///ghost.db"
 
 # Initialize the SQLAlchemy and Marshmallow instances
 db = SQLAlchemy(app)

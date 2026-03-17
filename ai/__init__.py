@@ -14,6 +14,7 @@ from typing import Dict, List, Optional
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+
 class DataProcessor:
     """
     A class for data preprocessing.
@@ -39,8 +40,12 @@ class DataProcessor:
             List[str]: The preprocessed text data.
         """
         # Remove special characters and convert to lowercase
-        preprocessed_data = [''.join(e for e in text if e.isalnum() or e.isspace()).lower() for text in self.text_data]
+        preprocessed_data = [
+            "".join(e for e in text if e.isalnum() or e.isspace()).lower()
+            for text in self.text_data
+        ]
         return preprocessed_data
+
 
 class LLMModel:
     """
@@ -67,7 +72,7 @@ class LLMModel:
             Optional[object]: The loaded LLM model or None if loading fails.
         """
         try:
-            with open(self.model_path, 'rb') as f:
+            with open(self.model_path, "rb") as f:
                 model = pickle.load(f)
             return model
         except FileNotFoundError:
@@ -94,12 +99,13 @@ class LLMModel:
         summary = model.summarize(text)
         return summary
 
+
 def main():
     """
     The main function to test the Ghost AI tool.
     """
     # Load the text data
-    with open('text_data.txt', 'r') as f:
+    with open("text_data.txt", "r") as f:
         text_data = [line.strip() for line in f.readlines()]
 
     # Create a DataProcessor instance
@@ -109,13 +115,14 @@ def main():
     preprocessed_data = data_processor.preprocess_text()
 
     # Create an LLMModel instance
-    model_path = 'llm_model.pkl'
+    model_path = "llm_model.pkl"
     llm_model = LLMModel(model_path)
 
     # Summarize the text data
     for text in preprocessed_data:
         summary = llm_model.summarize_text(text)
         print(summary)
+
 
 if __name__ == "__main__":
     main()

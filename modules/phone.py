@@ -39,9 +39,21 @@ class PhoneModule:
             return_exceptions=True,
         )
 
-        base = results[0] if not isinstance(results[0], Exception) else {"error": str(results[0])}
-        spam = results[1] if not isinstance(results[1], Exception) else {"error": str(results[1])}
-        social = results[2] if not isinstance(results[2], Exception) else {"error": str(results[2])}
+        base = (
+            results[0]
+            if not isinstance(results[0], Exception)
+            else {"error": str(results[0])}
+        )
+        spam = (
+            results[1]
+            if not isinstance(results[1], Exception)
+            else {"error": str(results[1])}
+        )
+        social = (
+            results[2]
+            if not isinstance(results[2], Exception)
+            else {"error": str(results[2])}
+        )
 
         if isinstance(base, dict):
             base["spam_check"] = spam
@@ -59,7 +71,13 @@ class PhoneModule:
             Dict[str, Any]: The parsed phone number information.
         """
         # Clean the number
-        cleaned = number.strip().replace(" ", "").replace("-", "").replace("(", "").replace(")", "")
+        cleaned = (
+            number.strip()
+            .replace(" ", "")
+            .replace("-", "")
+            .replace("(", "")
+            .replace(")", "")
+        )
 
         # Default to US if no country code is present
         if not cleaned.startswith("+"):
@@ -101,9 +119,15 @@ class PhoneModule:
         return {
             "input": number,
             "formatted": {
-                "international": phonenumbers.format_number(parsed, phonenumbers.PhoneNumberFormat.INTERNATIONAL),
-                "national": phonenumbers.format_number(parsed, phonenumbers.PhoneNumberFormat.NATIONAL),
-                "e164": phonenumbers.format_number(parsed, phonenumbers.PhoneNumberFormat.E164),
+                "international": phonenumbers.format_number(
+                    parsed, phonenumbers.PhoneNumberFormat.INTERNATIONAL
+                ),
+                "national": phonenumbers.format_number(
+                    parsed, phonenumbers.PhoneNumberFormat.NATIONAL
+                ),
+                "e164": phonenumbers.format_number(
+                    parsed, phonenumbers.PhoneNumberFormat.E164
+                ),
             },
             "valid": is_valid,
             "possible": is_possible,
@@ -131,19 +155,23 @@ class PhoneModule:
             async with aiohttp.ClientSession(timeout=self.timeout) as session:
                 # NumVerify API (free tier)
                 cleaned = number.replace("+", "").replace(" ", "").replace("-", "")
-                url = f"http://apilayer.net/api/validate?access_key=free&number={cleaned}"
+                url = (
+                    f"http://apilayer.net/api/validate?access_key=free&number={cleaned}"
+                )
                 try:
                     async with session.get(url) as resp:
                         if resp.status == 200:
                             data = await resp.json()
                             if data.get("valid"):
-                                reports.append({
-                                    "source": "numverify",
-                                    "valid": data.get("valid"),
-                                    "line_type": data.get("line_type"),
-                                    "carrier": data.get("carrier"),
-                                    "location": data.get("location"),
-                                })
+                                reports.append(
+                                    {
+                                        "source": "numverify",
+                                        "valid": data.get("valid"),
+                                        "line_type": data.get("line_type"),
+                                        "carrier": data.get("carrier"),
+                                        "location": data.get("location"),
+                                    }
+                                )
                 except Exception:
                     pass
 
@@ -179,13 +207,17 @@ class PhoneModule:
                     continue
                 try:
                     headers = {"User-Agent": self.config.user_agent}
-                    async with session.head(url, headers=headers, allow_redirects=True) as resp:
+                    async with session.head(
+                        url, headers=headers, allow_redirects=True
+                    ) as resp:
                         if resp.status == 200:
-                            linked_accounts.append({
-                                "service": service,
-                                "url": url,
-                                "status": "possibly_linked",
-                            })
+                            linked_accounts.append(
+                                {
+                                    "service": service,
+                                    "url": url,
+                                    "status": "possibly_linked",
+                                }
+                            )
                 except Exception:
                     pass
 

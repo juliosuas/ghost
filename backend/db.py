@@ -90,27 +90,33 @@ def init_db():
 
 # ── Investigation CRUD ──────────────────────────────────────────────
 
+
 def save_investigation(inv_dict: dict):
     """Save or update a full investigation from Investigation.to_dict()."""
     with get_db() as conn:
-        conn.execute("""
+        conn.execute(
+            """
             INSERT OR REPLACE INTO investigations
                 (id, target, input_type, status, started_at, completed_at, summary, risk_score, errors)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, (
-            inv_dict["id"],
-            inv_dict["target"],
-            inv_dict["input_type"],
-            inv_dict["status"],
-            inv_dict["started_at"],
-            inv_dict["completed_at"],
-            inv_dict.get("summary", ""),
-            inv_dict.get("risk_score", 0.0),
-            json.dumps(inv_dict.get("errors", [])),
-        ))
+        """,
+            (
+                inv_dict["id"],
+                inv_dict["target"],
+                inv_dict["input_type"],
+                inv_dict["status"],
+                inv_dict["started_at"],
+                inv_dict["completed_at"],
+                inv_dict.get("summary", ""),
+                inv_dict.get("risk_score", 0.0),
+                json.dumps(inv_dict.get("errors", [])),
+            ),
+        )
 
         # Store each module's findings
-        conn.execute("DELETE FROM findings WHERE investigation_id = ?", (inv_dict["id"],))
+        conn.execute(
+            "DELETE FROM findings WHERE investigation_id = ?", (inv_dict["id"],)
+        )
         for module_name, data in inv_dict.get("findings", {}).items():
             conn.execute(
                 "INSERT INTO findings (investigation_id, module_name, data) VALUES (?, ?, ?)",
@@ -125,7 +131,9 @@ def _store_entities_and_relationships(conn, inv_dict):
     """Extract entities from findings/correlations and store them."""
     investigation_id = inv_dict["id"]
     conn.execute("DELETE FROM entities WHERE investigation_id = ?", (investigation_id,))
-    conn.execute("DELETE FROM relationships WHERE investigation_id = ?", (investigation_id,))
+    conn.execute(
+        "DELETE FROM relationships WHERE investigation_id = ?", (investigation_id,)
+    )
 
     entity_map = {}  # (type, value) -> entity_id
 
@@ -135,7 +143,14 @@ def _store_entities_and_relationships(conn, inv_dict):
             return entity_map[key]
         cur = conn.execute(
             "INSERT INTO entities (investigation_id, entity_type, value, platform, confidence, metadata) VALUES (?, ?, ?, ?, ?, ?)",
-            (investigation_id, etype, value, platform, confidence, json.dumps(metadata or {})),
+            (
+                investigation_id,
+                etype,
+                value,
+                platform,
+                confidence,
+                json.dumps(metadata or {}),
+            ),
         )
         eid = cur.lastrowid
         entity_map[key] = eid
@@ -150,7 +165,9 @@ def _store_entities_and_relationships(conn, inv_dict):
     # Username profiles
     for profile in findings.get("username", {}).get("profiles", []):
         if profile.get("status") == "found":
-            eid = _ensure_entity("profile", profile.get("url", ""), platform=profile.get("platform", ""))
+            eid = _ensure_entity(
+                "profile", profile.get("url", ""), platform=profile.get("platform", "")
+            )
             conn.execute(
                 "INSERT INTO relationships (investigation_id, source_entity_id, target_entity_id, relationship_type, confidence) VALUES (?, ?, ?, ?, ?)",
                 (investigation_id, target_eid, eid, "has_profile", 0.8),
@@ -159,7 +176,11 @@ def _store_entities_and_relationships(conn, inv_dict):
     # Social profiles
     for profile in findings.get("social", {}).get("profiles", []):
         platform = profile.get("platform", "")
-        eid = _ensure_entity("profile", profile.get("url", profile.get("username", "")), platform=platform)
+        eid = _ensure_entity(
+            "profile",
+            profile.get("url", profile.get("username", "")),
+            platform=platform,
+        )
         conn.execute(
             "INSERT INTO relationships (investigation_id, source_entity_id, target_entity_id, relationship_type, confidence) VALUES (?, ?, ?, ?, ?)",
             (investigation_id, target_eid, eid, "has_profile", 0.9),
@@ -194,15 +215,19 @@ def _store_entities_and_relationships(conn, inv_dict):
 
     # Locations
     for loc in inv_dict.get("correlations", {}).get("locations", []):
-        _ensure_entity("location", loc.get("value", ""), metadata={
-            k: loc[k] for k in ("lat", "lon", "source") if k in loc
-        })
+        _ensure_entity(
+            "location",
+            loc.get("value", ""),
+            metadata={k: loc[k] for k in ("lat", "lon", "source") if k in loc},
+        )
 
 
 def get_investigation(investigation_id: str) -> dict | None:
     """Retrieve a full investigation by ID."""
     with get_db() as conn:
-        row = conn.execute("SELECT * FROM investigations WHERE id = ?", (investigation_id,)).fetchone()
+        row = conn.execute(
+            "SELECT * FROM investigations WHERE id = ?", (investigation_id,)
+        ).fetchone()
         if not row:
             return None
 
@@ -214,7 +239,9 @@ def get_investigation(investigation_id: str) -> dict | None:
             "SELECT module_name, data FROM findings WHERE investigation_id = ?",
             (investigation_id,),
         ).fetchall()
-        inv["findings"] = {r["module_name"]: json.loads(r["data"]) for r in findings_rows}
+        inv["findings"] = {
+            r["module_name"]: json.loads(r["data"]) for r in findings_rows
+        }
 
         # Load entities
         entities = conn.execute(
@@ -248,7 +275,9 @@ def list_investigations(limit: int = 50, offset: int = 0) -> list[dict]:
 def get_graph_data(investigation_id: str) -> dict | None:
     """Return D3.js-compatible force-directed graph data."""
     with get_db() as conn:
-        row = conn.execute("SELECT id FROM investigations WHERE id = ?", (investigation_id,)).fetchone()
+        row = conn.execute(
+            "SELECT id FROM investigations WHERE id = ?", (investigation_id,)
+        ).fetchone()
         if not row:
             return None
 
@@ -264,24 +293,31 @@ def get_graph_data(investigation_id: str) -> dict | None:
 
         nodes = []
         for e in entities:
-            nodes.append({
-                "id": e["id"],
-                "label": e["value"][:60],
-                "type": e["entity_type"],
-                "platform": e["platform"],
-                "confidence": e["confidence"],
-            })
+            nodes.append(
+                {
+                    "id": e["id"],
+                    "label": e["value"][:60],
+                    "type": e["entity_type"],
+                    "platform": e["platform"],
+                    "confidence": e["confidence"],
+                }
+            )
 
         links = []
         entity_ids = {e["id"] for e in entities}
         for r in relationships:
-            if r["source_entity_id"] in entity_ids and r["target_entity_id"] in entity_ids:
-                links.append({
-                    "source": r["source_entity_id"],
-                    "target": r["target_entity_id"],
-                    "type": r["relationship_type"],
-                    "confidence": r["confidence"],
-                })
+            if (
+                r["source_entity_id"] in entity_ids
+                and r["target_entity_id"] in entity_ids
+            ):
+                links.append(
+                    {
+                        "source": r["source_entity_id"],
+                        "target": r["target_entity_id"],
+                        "type": r["relationship_type"],
+                        "confidence": r["confidence"],
+                    }
+                )
 
         return {"nodes": nodes, "links": links}
 
@@ -289,5 +325,7 @@ def get_graph_data(investigation_id: str) -> dict | None:
 def delete_investigation(investigation_id: str) -> bool:
     """Delete an investigation and all related data."""
     with get_db() as conn:
-        cur = conn.execute("DELETE FROM investigations WHERE id = ?", (investigation_id,))
+        cur = conn.execute(
+            "DELETE FROM investigations WHERE id = ?", (investigation_id,)
+        )
         return cur.rowcount > 0

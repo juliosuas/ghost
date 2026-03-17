@@ -6,6 +6,7 @@ from typing import Any
 
 from ghost.core.config import Config
 
+
 class DarkWebModule:
     """Dark web and underground intelligence gathering."""
 
@@ -37,7 +38,9 @@ class DarkWebModule:
         keys = ["ahmia", "breaches", "pastes", "dehashed"]
         data = {"target": target, "input_type": input_type}
         for key, result in zip(keys, results):
-            data[key] = result if not isinstance(result, Exception) else {"error": str(result)}
+            data[key] = (
+                result if not isinstance(result, Exception) else {"error": str(result)}
+            )
 
         return data
 
@@ -57,6 +60,7 @@ class DarkWebModule:
                         text = await resp.text()
                         # Parse results from HTML
                         from bs4 import BeautifulSoup
+
                         soup = BeautifulSoup(text, "html.parser")
                         results = []
                         for item in soup.select("li.result"):
@@ -64,11 +68,17 @@ class DarkWebModule:
                             link_el = item.select_one("a")
                             desc_el = item.select_one("p")
                             if title_el and link_el:
-                                results.append({
-                                    "title": title_el.get_text(strip=True),
-                                    "url": link_el.get("href", ""),
-                                    "description": desc_el.get_text(strip=True) if desc_el else "",
-                                })
+                                results.append(
+                                    {
+                                        "title": title_el.get_text(strip=True),
+                                        "url": link_el.get("href", ""),
+                                        "description": (
+                                            desc_el.get_text(strip=True)
+                                            if desc_el
+                                            else ""
+                                        ),
+                                    }
+                                )
                         return {"results": results[:20], "count": len(results)}
                     return {"results": [], "error": f"Status {resp.status}"}
         except Exception as e:
@@ -101,18 +111,22 @@ class DarkWebModule:
                         if resp.status == 200:
                             data = await resp.json()
                             for breach in data:
-                                breaches.append({
-                                    "name": breach.get("Name"),
-                                    "title": breach.get("Title"),
-                                    "date": breach.get("BreachDate"),
-                                    "pwn_count": breach.get("PwnCount"),
-                                    "data_classes": breach.get("DataClasses", []),
-                                    "verified": breach.get("IsVerified"),
-                                })
+                                breaches.append(
+                                    {
+                                        "name": breach.get("Name"),
+                                        "title": breach.get("Title"),
+                                        "date": breach.get("BreachDate"),
+                                        "pwn_count": breach.get("PwnCount"),
+                                        "data_classes": breach.get("DataClasses", []),
+                                        "verified": breach.get("IsVerified"),
+                                    }
+                                )
 
                     # Check pastes
                     if "@" in target:
-                        paste_url = f"https://haveibeenpwned.com/api/v3/pasteaccount/{target}"
+                        paste_url = (
+                            f"https://haveibeenpwned.com/api/v3/pasteaccount/{target}"
+                        )
                         async with session.get(paste_url, headers=headers) as resp:
                             if resp.status == 200:
                                 pastes = await resp.json()
@@ -149,13 +163,15 @@ class DarkWebModule:
 
         # Search public paste indices
         paste_searches = [
-            ("PasteBin (Google)", f"site:pastebin.com \"{target}\""),
-            ("GitHub Gists", f"site:gist.github.com \"{target}\""),
-            ("Ghostbin", f"site:ghostbin.com \"{target}\""),
+            ("PasteBin (Google)", f'site:pastebin.com "{target}"'),
+            ("GitHub Gists", f'site:gist.github.com "{target}"'),
+            ("Ghostbin", f'site:ghostbin.com "{target}"'),
         ]
 
         # Use Google Custom Search if available
-        if self.config.has_api_key("google_api_key") and self.config.has_api_key("google_cx"):
+        if self.config.has_api_key("google_api_key") and self.config.has_api_key(
+            "google_cx"
+        ):
             async with aiohttp.ClientSession(timeout=self.timeout) as session:
                 for name, query in paste_searches:
                     try:
@@ -169,12 +185,14 @@ class DarkWebModule:
                             if resp.status == 200:
                                 data = await resp.json()
                                 for item in data.get("items", [])[:5]:
-                                    pastes.append({
-                                        "source": name,
-                                        "title": item.get("title"),
-                                        "url": item.get("link"),
-                                        "snippet": item.get("snippet"),
-                                    })
+                                    pastes.append(
+                                        {
+                                            "source": name,
+                                            "title": item.get("title"),
+                                            "url": item.get("link"),
+                                            "snippet": item.get("snippet"),
+                                        }
+                                    )
                     except Exception:
                         pass
 

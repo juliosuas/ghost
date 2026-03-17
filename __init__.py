@@ -4,6 +4,7 @@ import re
 import json
 from datetime import datetime
 
+
 class User:
     """
     Represents a user with a unique id and name.
@@ -19,6 +20,7 @@ class User:
         """
         self.user_id = user_id
         self.name = name
+
 
 class UserRepository:
     """
@@ -44,9 +46,9 @@ class UserRepository:
         if not os.path.exists(self.data_file):
             return []
 
-        with open(self.data_file, 'r') as file:
+        with open(self.data_file, "r") as file:
             data = json.load(file)
-            return [User(user['id'], user['name']) for user in data]
+            return [User(user["id"], user["name"]) for user in data]
 
     def save_users(self, users):
         """
@@ -55,9 +57,10 @@ class UserRepository:
         Args:
             users (list[User]): List of User instances.
         """
-        data = [{'id': user.user_id, 'name': user.name} for user in users]
-        with open(self.data_file, 'w') as file:
+        data = [{"id": user.user_id, "name": user.name} for user in users]
+        with open(self.data_file, "w") as file:
             json.dump(data, file, indent=4)
+
 
 class UserService:
     """
@@ -106,20 +109,24 @@ class UserService:
         self.repository.save_users([user] + users)
         return user
 
+
 def main():
     """
     Demonstrates user service functionality.
     """
-    repository = UserRepository('users.json')
+    repository = UserRepository("users.json")
     service = UserService(repository)
 
     # Create a new user
-    user = service.create_user('John Doe')
-    print(f'Created user with id {user.user_id} and name {user.name}')
+    user = service.create_user("John Doe")
+    print(f"Created user with id {user.user_id} and name {user.name}")
 
     # Retrieve a user by id
     retrieved_user = service.get_user(user.user_id)
-    print(f'Retrieved user with id {retrieved_user.user_id} and name {retrieved_user.name}')
+    print(
+        f"Retrieved user with id {retrieved_user.user_id} and name {retrieved_user.name}"
+    )
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

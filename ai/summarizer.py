@@ -44,16 +44,22 @@ class OSINTSummarizer:
         """
         try:
             import openai
+
             client = openai.AsyncOpenAI(api_key=self.config.openai_api_key)
 
-            findings_brief = self._extract_key_findings(investigation.get("findings", {}))
+            findings_brief = self._extract_key_findings(
+                investigation.get("findings", {})
+            )
 
             prompt = self._create_prompt(investigation, findings_brief)
 
             response = await client.chat.completions.create(
                 model=self.config.openai_model,
                 messages=[
-                    {"role": "system", "content": "You are a professional intelligence analyst writing executive summaries. Be concise, factual, and objective."},
+                    {
+                        "role": "system",
+                        "content": "You are a professional intelligence analyst writing executive summaries. Be concise, factual, and objective.",
+                    },
                     {"role": "user", "content": prompt},
                 ],
                 temperature=0.3,
@@ -63,7 +69,10 @@ class OSINTSummarizer:
             return response.choices[0].message.content.strip()
 
         except Exception as e:
-            return self._generate_heuristic_summary(investigation) + f"\n\n[AI summary unavailable: {e}]"
+            return (
+                self._generate_heuristic_summary(investigation)
+                + f"\n\n[AI summary unavailable: {e}]"
+            )
 
     def _generate_heuristic_summary(self, investigation: dict) -> str:
         """
@@ -107,11 +116,17 @@ class OSINTSummarizer:
                 f"Target appears in {total_breaches} known data breaches, indicating potential credential exposure."
             )
 
-        risk_level = "LOW" if risk_score < 0.4 else "MEDIUM" if risk_score < 0.7 else "HIGH"
-        sections.append(f"Overall risk assessment: {risk_level} (score: {risk_score:.1%})")
+        risk_level = (
+            "LOW" if risk_score < 0.4 else "MEDIUM" if risk_score < 0.7 else "HIGH"
+        )
+        sections.append(
+            f"Overall risk assessment: {risk_level} (score: {risk_score:.1%})"
+        )
 
         if investigation.get("errors"):
-            sections.append(f"Note: {len(investigation['errors'])} module(s) encountered errors during collection.")
+            sections.append(
+                f"Note: {len(investigation['errors'])} module(s) encountered errors during collection."
+            )
 
         return "\n\n".join(sections)
 
@@ -130,7 +145,15 @@ class OSINTSummarizer:
             if isinstance(data, dict) and "error" not in data:
                 brief = {}
                 for k, v in data.items():
-                    if k in ("profiles", "found_count", "breaches", "total", "domain", "username", "email"):
+                    if k in (
+                        "profiles",
+                        "found_count",
+                        "breaches",
+                        "total",
+                        "domain",
+                        "username",
+                        "email",
+                    ):
                         if isinstance(v, list) and len(v) > 5:
                             brief[k] = f"{len(v)} items"
                         else:

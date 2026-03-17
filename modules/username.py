@@ -128,13 +128,17 @@ class UsernameModule:
                 try:
                     async with aiohttp.ClientSession(timeout=self.timeout) as session:
                         headers = {"User-Agent": self.config.user_agent}
-                        async with session.get(url, headers=headers, allow_redirects=False) as resp:
+                        async with session.get(
+                            url, headers=headers, allow_redirects=False
+                        ) as resp:
                             if resp.status == expected_status:
-                                found.append({
-                                    "platform": name,
-                                    "url": url,
-                                    "status": resp.status,
-                                })
+                                found.append(
+                                    {
+                                        "platform": name,
+                                        "url": url,
+                                        "status": resp.status,
+                                    }
+                                )
                             else:
                                 not_found.append(name)
                 except asyncio.TimeoutError:
@@ -143,8 +147,7 @@ class UsernameModule:
                     errors.append({"platform": name, "error": str(e)})
 
         tasks = [
-            check_platform(name, url_tpl, status)
-            for name, url_tpl, status in PLATFORMS
+            check_platform(name, url_tpl, status) for name, url_tpl, status in PLATFORMS
         ]
         await asyncio.gather(*tasks)
 
@@ -172,13 +175,21 @@ class UsernameModule:
         """
         try:
             proc = await asyncio.create_subprocess_exec(
-                "sherlock", username, "--print-found", "--timeout", "15",
+                "sherlock",
+                username,
+                "--print-found",
+                "--timeout",
+                "15",
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
             )
             stdout, _ = await asyncio.wait_for(proc.communicate(), timeout=120)
             lines = stdout.decode().strip().split("\n")
-            results = [line.strip() for line in lines if line.startswith("[+") or "http" in line]
+            results = [
+                line.strip()
+                for line in lines
+                if line.startswith("[+") or "http" in line
+            ]
             return {"available": True, "results": results}
         except FileNotFoundError:
             return {"available": False, "note": "sherlock not installed"}

@@ -40,8 +40,16 @@ class GeolocationModule:
         return {
             "target": target,
             "resolved_ip": ip,
-            "geolocation": results[0] if not isinstance(results[0], Exception) else self._create_error_result(str(results[0])),
-            "shodan": results[1] if not isinstance(results[1], Exception) else self._create_error_result(str(results[1])),
+            "geolocation": (
+                results[0]
+                if not isinstance(results[0], Exception)
+                else self._create_error_result(str(results[0]))
+            ),
+            "shodan": (
+                results[1]
+                if not isinstance(results[1], Exception)
+                else self._create_error_result(str(results[1]))
+            ),
         }
 
     async def _resolve_to_ip(self, target: str) -> Optional[str]:
@@ -137,8 +145,18 @@ class GeolocationModule:
             "city": best.get("city"),
             "region": best.get("region") or best.get("regionName"),
             "country": best.get("country"),
-            "latitude": best.get("latitude") or (best.get("location", ",").split(",")[0] if best.get("location") else None),
-            "longitude": best.get("longitude") or (best.get("location", ",").split(",")[1] if best.get("location") else None),
+            "latitude": best.get("latitude")
+            or (
+                best.get("location", ",").split(",")[0]
+                if best.get("location")
+                else None
+            ),
+            "longitude": best.get("longitude")
+            or (
+                best.get("location", ",").split(",")[1]
+                if best.get("location")
+                else None
+            ),
             "isp": best.get("isp") or best.get("org"),
         }
 

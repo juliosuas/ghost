@@ -8,6 +8,7 @@ import requests
 from bs4 import BeautifulSoup
 from typing import List, Dict
 
+
 def fetch_url(url: str) -> str:
     """Fetch the content of a URL.
 
@@ -28,6 +29,7 @@ def fetch_url(url: str) -> str:
         print(f"Error fetching URL: {e}")
         return None
 
+
 def parse_html(html: str) -> BeautifulSoup:
     """Parse HTML content using BeautifulSoup.
 
@@ -37,7 +39,8 @@ def parse_html(html: str) -> BeautifulSoup:
     Returns:
     BeautifulSoup: The parsed HTML content.
     """
-    return BeautifulSoup(html, 'html.parser')
+    return BeautifulSoup(html, "html.parser")
+
 
 def extract_links(html: BeautifulSoup) -> List[str]:
     """Extract links from HTML content.
@@ -48,7 +51,8 @@ def extract_links(html: BeautifulSoup) -> List[str]:
     Returns:
     List[str]: A list of extracted links.
     """
-    return [a.get('href') for a in html.find_all('a') if a.get('href')]
+    return [a.get("href") for a in html.find_all("a") if a.get("href")]
+
 
 def extract_emails(html: BeautifulSoup) -> List[str]:
     """Extract email addresses from HTML content.
@@ -59,7 +63,8 @@ def extract_emails(html: BeautifulSoup) -> List[str]:
     Returns:
     List[str]: A list of extracted email addresses.
     """
-    return [text for text in html.find_all(text=True) if '@' in text]
+    return [text for text in html.find_all(text=True) if "@" in text]
+
 
 class OSINTCollector:
     """A class for collecting OSINT data.
@@ -90,14 +95,16 @@ class OSINTCollector:
         links = extract_links(soup)
         emails = extract_emails(soup)
 
-        return {'links': links, 'emails': emails}
+        return {"links": links, "emails": emails}
+
 
 def main():
     """The main entry point of the script."""
-    url = 'https://example.com'
+    url = "https://example.com"
     collector = OSINTCollector(url)
     data = collector.collect_data()
     print(data)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()
