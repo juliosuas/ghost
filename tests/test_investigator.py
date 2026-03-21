@@ -249,7 +249,7 @@ class TestGhostInvestigator:
         MockSummarizer.return_value = mock_summarizer
 
         investigator = GhostInvestigator()
-        result = asyncio.get_event_loop().run_until_complete(
+        result = asyncio.run(
             investigator.investigate_async("johndoe", "username")
         )
 

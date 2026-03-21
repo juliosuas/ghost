@@ -1,12 +1,15 @@
-.PHONY: install run cli dashboard test clean docker-up docker-down lint
+.PHONY: install dev run cli dashboard test clean docker-up docker-down lint format
 
 install:
-	pip install -r requirements.txt
+	pip install -e .
+
+dev:
+	pip install -e ".[dev,full]"
 
 run: cli
 
 cli:
-	python -m ghost.ui.cli
+	python -m ghost
 
 dashboard:
 	python -m ghost.backend.server
