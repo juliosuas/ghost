@@ -265,3 +265,4 @@ class TestSummarizerFallback:
         assert "johndoe" in result
         assert "username" in result
         assert "LOW" in result
+
