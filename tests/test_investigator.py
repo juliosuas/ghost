@@ -203,6 +203,7 @@ class TestDatabaseConfiguration:
         from ghost.core.config import DATA_DIR
 
         assert resolve_database_path("ghost-local.db") == DATA_DIR / "ghost-local.db"
+        assert resolve_database_path("sqlite:///ghost-local.db") == DATA_DIR / "ghost-local.db"
 
     def test_unsupported_database_scheme_is_explicit(self):
         from ghost.backend.db import resolve_database_path

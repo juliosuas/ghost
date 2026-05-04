@@ -47,3 +47,19 @@ Completed in branch `v2-feedback-database-and-cli-polish`:
 2. Add `--offline` / `--no-ai` profile for safe demos and deterministic tests.
 3. Add report provenance: timestamp, module list, source URLs, errors, and confidence per finding.
 4. Add GitHub issue response summarizing SQLite direction and Postgres roadmap.
+
+## Gstack review integrated — 2026-05-03 heartbeat
+
+### Office-hours forcing answers
+- **Demand reality:** The first real feedback was not “add more sources”; it was “can this store data like a serious OSINT product?” That means trust/infrastructure is the current bottleneck.
+- **Status quo:** Users can glue Sherlock/SpiderFoot/Maltego-style outputs, but the pain is fragmented evidence and weak investigation continuity.
+- **Desperate specificity:** Security researchers and digital-footprint auditors need repeatable, defensible reports with provenance and graph state, not just a list of hits.
+- **Narrowest wedge:** Authorized self-audit / client-owned asset audit. Safer, easier to demo, and better for public reputation.
+- **Observation:** The repo had duplicate source trees and hidden import ambiguity. That is deadly for a Python security tool because tests can pass against the wrong package.
+- **Future-fit:** v2 should become the “case file” layer: storage, graph, reports, provenance, then plugins.
+
+### CEO verdict
+Hold scope on new OSINT modules for this v2 sprint. Expand only where it increases trust: doctor command, storage clarity, provenance, and package hygiene. A flashy module launch with shaky internals would be bad taste. The 10-star product is a calm, defensible investigation workspace.
+
+### Engineering verdict
+The first batch is correct: canonical package cleanup + SQLite storage + tests. Next engineering risk is that `doctor` currently lives in CLI only; the same checks should become reusable functions later so API/server startup can share them.

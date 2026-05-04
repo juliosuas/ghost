@@ -1,6 +1,8 @@
 """Rich CLI with interactive menus and progress tracking."""
 
 import asyncio
+import importlib.util
+import shutil
 import sys
 
 import click
@@ -15,6 +17,7 @@ from rich import box
 
 from ghost.core.investigator import GhostInvestigator
 from ghost.core.config import config
+from ghost.backend.db import DB_PATH, get_connection, init_db
 
 console = Console()
 
@@ -97,6 +100,46 @@ def interactive():
     """Launch interactive investigation mode."""
     print_banner()
     interactive_menu()
+
+
+@cli.command()
+def doctor():
+    """Check local Ghost configuration and optional capabilities."""
+    print_banner()
+
+    table = Table(title="Ghost Doctor", box=box.ROUNDED, border_style="green")
+    table.add_column("Check", style="bold")
+    table.add_column("Status")
+    table.add_column("Detail", overflow="fold")
+
+    def add(name: str, ok: bool, detail: str):
+        table.add_row(name, "[green]OK[/green]" if ok else "[yellow]WARN[/yellow]", detail)
+
+    try:
+        init_db()
+        with get_connection() as conn:
+            conn.execute("SELECT 1").fetchone()
+        add("database", True, str(DB_PATH))
+    except Exception as exc:
+        add("database", False, str(exc))
+
+    add("OpenAI key", config.has_api_key("openai_api_key"), "set" if config.has_api_key("openai_api_key") else "missing; fallback summaries still work")
+
+    for package, label in [
+        ("aiohttp", "HTTP collection"),
+        ("rich", "CLI UI"),
+        ("flask", "REST API"),
+        ("phonenumbers", "Phone module"),
+        ("dns", "Domain DNS module"),
+    ]:
+        add(label, importlib.util.find_spec(package) is not None, package)
+
+    for binary, label in [("sherlock", "Sherlock optional username coverage")]:
+        found = shutil.which(binary)
+        add(label, bool(found), found or "not installed; built-in platform checks still run")
+
+    add("enabled modules", bool(config.enabled_modules), ", ".join(config.enabled_modules))
+    console.print(table)
 
 
 def interactive_menu():

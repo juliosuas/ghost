@@ -34,6 +34,10 @@ def resolve_database_path(database_url: str) -> Path:
             # POSIX paths can arrive as //Users/... when formatted naively.
             if raw_path.startswith("//"):
                 raw_path = raw_path[1:]
+            elif raw_path.startswith("/") and raw_path.count("/") == 1:
+                # sqlite:///ghost.db should behave like the documented local
+                # relative path, resolving under Ghost's data directory.
+                raw_path = raw_path[1:]
             path = Path(raw_path)
 
         if str(path) in ("", ":memory:"):
