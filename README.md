@@ -134,6 +134,20 @@ Copy `.env.example` to `.env` and add your API keys:
 | `TWITTER_BEARER_TOKEN` | Twitter/X API | No | ✅ |
 | `IPINFO_TOKEN` | IP Geolocation | No | ✅ |
 
+### Storage
+
+Ghost v2 stores investigations, findings, entities, and graph relationships in
+SQLite by default instead of JSON files. This gives local users durable,
+queryable storage without requiring a separate database server.
+
+```env
+DATABASE_URL=sqlite:///./ghost/data/ghost.db
+```
+
+PostgreSQL is on the roadmap behind the storage adapter boundary. For now,
+non-SQLite `DATABASE_URL` values fail explicitly so deployments do not silently
+write data to the wrong place.
+
 > **Note:** Ghost works with just an OpenAI key. Additional keys unlock more modules.
 
 ## 📖 Usage

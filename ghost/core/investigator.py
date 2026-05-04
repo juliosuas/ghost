@@ -36,7 +36,7 @@ def _detect_input_type(target: str) -> str:
         return "email"
     if target.startswith("+") or target.replace("-", "").replace(" ", "").isdigit():
         return "phone"
-    if "." in target and not " " in target and len(target.split(".")[-1]) <= 6:
+    if "." in target and " " not in target and len(target.split(".")[-1]) <= 6:
         return "domain"
     if " " in target:
         return "name"

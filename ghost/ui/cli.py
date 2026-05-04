@@ -2,7 +2,6 @@
 
 import asyncio
 import sys
-from datetime import datetime
 
 import click
 from rich.console import Console
@@ -11,12 +10,10 @@ from rich.table import Table
 from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TimeElapsedColumn
 from rich.prompt import Prompt, Confirm
 from rich.tree import Tree
-from rich.layout import Layout
 from rich.text import Text
-from rich.markdown import Markdown
 from rich import box
 
-from ghost.core.investigator import GhostInvestigator, INPUT_TYPE_MODULES
+from ghost.core.investigator import GhostInvestigator
 from ghost.core.config import config
 
 console = Console()
@@ -150,7 +147,6 @@ def interactive_menu():
 
         modules = None
         if choice == "7":
-            available = list(INPUT_TYPE_MODULES.keys())
             console.print(f"[dim]Available modules: {', '.join(config.enabled_modules)}[/dim]")
             mod_input = Prompt.ask("[green]Enter modules (comma-separated)")
             modules = [m.strip() for m in mod_input.split(",")]

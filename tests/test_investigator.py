@@ -11,7 +11,7 @@ from ghost.core.investigator import (
     _detect_input_type,
     INPUT_TYPE_MODULES,
 )
-from ghost.backend.db import init_db, save_investigation, get_investigation, list_investigations, get_graph_data, delete_investigation, DB_PATH
+from ghost.backend.db import init_db, save_investigation, get_investigation, list_investigations, get_graph_data, delete_investigation
 
 
 # ── Input detection ─────────────────────────────────────────────────
@@ -187,6 +187,28 @@ class TestDatabase:
         assert len(loaded["entities"]) > 0
         types = {e["entity_type"] for e in loaded["entities"]}
         assert "target" in types
+
+
+# ── Database configuration ──────────────────────────────────────────
+
+class TestDatabaseConfiguration:
+    def test_sqlite_database_url_resolves_absolute_path(self, tmp_path):
+        from ghost.backend.db import resolve_database_path
+
+        db_path = tmp_path / "ghost-v2.db"
+        assert resolve_database_path(f"sqlite:///{db_path}") == db_path
+
+    def test_plain_relative_database_path_resolves_under_data_dir(self):
+        from ghost.backend.db import resolve_database_path
+        from ghost.core.config import DATA_DIR
+
+        assert resolve_database_path("ghost-local.db") == DATA_DIR / "ghost-local.db"
+
+    def test_unsupported_database_scheme_is_explicit(self):
+        from ghost.backend.db import resolve_database_path
+
+        with pytest.raises(ValueError, match="Unsupported DATABASE_URL scheme"):
+            resolve_database_path("postgresql://user:pass@localhost/ghost")
 
 
 # ── GhostInvestigator (mocked modules) ─────────────────────────────

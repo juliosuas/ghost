@@ -2,20 +2,64 @@
 
 import json
 import sqlite3
-from datetime import datetime, timezone
 from pathlib import Path
 from contextlib import contextmanager
+from urllib.parse import unquote, urlparse
 
 from ghost.core.config import config, DATA_DIR
 
-DB_PATH = DATA_DIR / "ghost.db"
+SCHEMA_VERSION = 2
+
+
+def resolve_database_path(database_url: str) -> Path:
+    """Resolve Ghost's configured SQLite database URL to a filesystem path.
+
+    Ghost v2 uses SQLite as the durable default because it is robust enough for
+    local investigations, easy to back up, and avoids the old JSON-file storage
+    limitation raised in early feedback. Other database engines are explicit
+    roadmap items instead of silently falling back to an unexpected path.
+    """
+    parsed = urlparse(database_url)
+
+    if parsed.scheme in ("", "sqlite"):
+        if parsed.scheme == "":
+            path = Path(database_url)
+        elif parsed.netloc and parsed.netloc != "localhost":
+            # sqlite://relative.db is parsed as netloc=relative.db; accept it as
+            # a local filename for developer ergonomics.
+            path = Path(unquote(parsed.netloc + parsed.path))
+        else:
+            raw_path = unquote(parsed.path)
+            # urlparse keeps the leading slash from sqlite:/// and absolute
+            # POSIX paths can arrive as //Users/... when formatted naively.
+            if raw_path.startswith("//"):
+                raw_path = raw_path[1:]
+            path = Path(raw_path)
+
+        if str(path) in ("", ":memory:"):
+            return Path(":memory:")
+        if not path.is_absolute():
+            path = DATA_DIR / path
+        return path
+
+    raise ValueError(
+        f"Unsupported DATABASE_URL scheme '{parsed.scheme}'. "
+        "Ghost v2 currently supports sqlite:///path/to/ghost.db. "
+        "PostgreSQL support is planned behind the storage adapter boundary."
+    )
+
+
+DB_PATH = resolve_database_path(config.database_url)
 
 
 def get_connection() -> sqlite3.Connection:
-    conn = sqlite3.connect(str(DB_PATH))
+    if str(DB_PATH) != ":memory:":
+        DB_PATH.parent.mkdir(parents=True, exist_ok=True)
+    conn = sqlite3.connect(str(DB_PATH), timeout=30)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA journal_mode=WAL")
     conn.execute("PRAGMA foreign_keys=ON")
+    conn.execute("PRAGMA busy_timeout=5000")
     return conn
 
 
@@ -82,10 +126,23 @@ def init_db():
                 FOREIGN KEY (target_entity_id) REFERENCES entities(id) ON DELETE CASCADE
             );
 
+            CREATE TABLE IF NOT EXISTS schema_migrations (
+                version INTEGER PRIMARY KEY,
+                applied_at TEXT NOT NULL DEFAULT (datetime('now'))
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_investigations_target ON investigations(target);
+            CREATE INDEX IF NOT EXISTS idx_investigations_status ON investigations(status);
+            CREATE INDEX IF NOT EXISTS idx_investigations_created_at ON investigations(created_at);
             CREATE INDEX IF NOT EXISTS idx_entities_investigation ON entities(investigation_id);
+            CREATE INDEX IF NOT EXISTS idx_entities_type_value ON entities(entity_type, value);
             CREATE INDEX IF NOT EXISTS idx_findings_investigation ON findings(investigation_id);
             CREATE INDEX IF NOT EXISTS idx_relationships_investigation ON relationships(investigation_id);
         """)
+        conn.execute(
+            "INSERT OR IGNORE INTO schema_migrations (version) VALUES (?)",
+            (SCHEMA_VERSION,),
+        )
 
 
 # ── Investigation CRUD ──────────────────────────────────────────────

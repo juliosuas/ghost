@@ -2,7 +2,6 @@
 
 import asyncio
 import re
-import socket
 import aiohttp
 from typing import Any
 

@@ -1,8 +1,6 @@
 """Tests for Ghost OSINT collection modules."""
 
-import asyncio
-import pytest
-from unittest.mock import AsyncMock, MagicMock, patch, PropertyMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
 from ghost.core.config import Config
 from ghost.modules.username import UsernameModule, PLATFORMS
@@ -21,13 +19,14 @@ class TestUsernameModule:
     def test_platforms_list_not_empty(self):
         """Ensure we have a meaningful number of platforms to check."""
         assert len(PLATFORMS) >= 50
-        # Each platform should be a 3-tuple
+        # Each platform should define redirect behaviour explicitly.
         for p in PLATFORMS:
-            assert len(p) == 3
-            name, url_template, status = p
+            assert len(p) == 4
+            name, url_template, status, allow_redirects = p
             assert isinstance(name, str)
             assert "{}" in url_template
             assert isinstance(status, int)
+            assert isinstance(allow_redirects, bool)
 
     def test_platform_names_unique(self):
         """Platform names should be unique."""
@@ -36,7 +35,7 @@ class TestUsernameModule:
 
     def test_platform_urls_contain_placeholder(self):
         """All URL templates must contain {} for username substitution."""
-        for name, url, _ in PLATFORMS:
+        for name, url, _, _ in PLATFORMS:
             assert "{}" in url, f"Platform {name} URL missing placeholder: {url}"
 
     def test_module_init(self):
@@ -77,12 +76,10 @@ class TestUsernameModule:
 
     def test_username_normalization(self):
         """Username with @ prefix should be normalized."""
-        cfg = self._make_config()
-        module = UsernameModule(cfg)
-        # The run method strips @ — we test the logic
+        # The run method strips @ while preserving platform-sensitive casing.
         target = "@SomeUser"
-        username = target.split("@")[-1].strip().lower()
-        assert username == "someuser"
+        username = target.split("@")[-1].strip()
+        assert username == "SomeUser"
 
     @patch("ghost.modules.username.asyncio.create_subprocess_exec")
     async def test_sherlock_not_installed(self, mock_exec):
@@ -202,7 +199,7 @@ class TestCorrelator:
         locations = correlator._correlate_locations(findings)
         assert len(locations) >= 2
         # Should include coordinates
-        coord_locs = [l for l in locations if l.get("field") == "coordinates"]
+        coord_locs = [location for location in locations if location.get("field") == "coordinates"]
         assert len(coord_locs) == 1
 
 
@@ -265,4 +262,3 @@ class TestSummarizerFallback:
         assert "johndoe" in result
         assert "username" in result
         assert "LOW" in result
-
