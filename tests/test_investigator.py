@@ -11,7 +11,7 @@ from ghost.core.investigator import (
     _detect_input_type,
     INPUT_TYPE_MODULES,
 )
-from ghost.backend.db import init_db, save_investigation, get_investigation, list_investigations, get_graph_data, delete_investigation, DB_PATH
+from ghost.backend.db import init_db, save_investigation, get_investigation, list_investigations, get_graph_data, delete_investigation
 
 
 # ── Input detection ─────────────────────────────────────────────────
@@ -51,10 +51,12 @@ class TestInvestigationModel:
         assert isinstance(inv.id, str) and len(inv.id) == 36
 
     def test_to_dict(self):
-        inv = Investigation("test@example.com", "email")
+        inv = Investigation("test@example.com", "email", scope="self-audit", authorized_use=True)
         d = inv.to_dict()
         assert d["target"] == "test@example.com"
         assert d["input_type"] == "email"
+        assert d["scope"] == "self-audit"
+        assert d["authorized_use"] is True
         assert "id" in d
         assert "started_at" in d
         assert d["status"] == "pending"
@@ -117,6 +119,7 @@ class TestDatabase:
         loaded = get_investigation(inv.id)
         assert loaded is not None
         assert loaded["target"] == "johndoe"
+        assert loaded["authorized_use"] is False
         assert loaded["status"] == "completed"
         assert loaded["risk_score"] == 0.65
         assert "username" in loaded["findings"]
@@ -187,6 +190,102 @@ class TestDatabase:
         assert len(loaded["entities"]) > 0
         types = {e["entity_type"] for e in loaded["entities"]}
         assert "target" in types
+
+
+# ── Database configuration ──────────────────────────────────────────
+
+class TestDatabaseConfiguration:
+    def test_sqlite_database_url_resolves_absolute_path(self, tmp_path):
+        from ghost.backend.db import resolve_database_path
+
+        db_path = tmp_path / "ghost-v2.db"
+        assert resolve_database_path(f"sqlite:///{db_path}") == db_path
+
+    def test_plain_relative_database_path_resolves_under_data_dir(self):
+        from ghost.backend.db import resolve_database_path
+        from ghost.core.config import DATA_DIR
+
+        assert resolve_database_path("ghost-local.db") == DATA_DIR / "ghost-local.db"
+        assert resolve_database_path("sqlite:///ghost-local.db") == DATA_DIR / "ghost-local.db"
+
+    def test_unsupported_database_scheme_is_explicit(self):
+        from ghost.backend.db import resolve_database_path
+
+        with pytest.raises(ValueError, match="Unsupported DATABASE_URL scheme"):
+            resolve_database_path("postgresql://user:pass@localhost/ghost")
+
+    def test_doctor_checks_return_structured_results(self):
+        from ghost.core.doctor import has_error, run_doctor_checks
+
+        checks = run_doctor_checks()
+        names = {check.name for check in checks}
+
+        assert "database" in names
+        assert "enabled modules" in names
+        assert has_error(checks) is False
+
+
+# ── Report provenance ───────────────────────────────────────────────
+
+class TestReportProvenance:
+    def test_json_report_includes_provenance(self, tmp_path):
+        from ghost.core.report_generator import ReportGenerator
+
+        inv = Investigation("johndoe", "username", scope="consented demo", authorized_use=True)
+        inv.findings = {
+            "username": {
+                "profiles": [
+                    {"platform": "GitHub", "url": "https://github.com/johndoe", "status": "found"},
+                    {"platform": "GitHub", "url": "https://github.com/johndoe", "status": "found"},
+                ]
+            },
+            "social": {"error": "rate limited"},
+        }
+        output = tmp_path / "report.json"
+
+        ReportGenerator().generate(inv, "json", str(output))
+
+        data = json.loads(output.read_text())
+        provenance = data["provenance"]
+        assert provenance["modules_run"] == ["social", "username"]
+        assert provenance["scope"] == "consented demo"
+        assert provenance["authorized_use"] is True
+        assert provenance["source_urls"] == ["https://github.com/johndoe"]
+        assert provenance["source_url_count"] == 1
+        assert provenance["module_errors"] == {"social": "rate limited"}
+
+
+# ── API safety gates ────────────────────────────────────────────────
+
+class TestApiSafetyGates:
+    def test_api_requires_authorized_use_acknowledgement(self):
+        from ghost.backend.server import app
+
+        client = app.test_client()
+        response = client.post("/api/investigate", json={"target": "johndoe", "input_type": "username"})
+
+        assert response.status_code == 400
+        assert response.get_json()["error"] == "authorized_use must be true for API investigations"
+
+    @patch("ghost.backend.server.threading.Thread")
+    def test_api_accepts_authorized_scope(self, mock_thread):
+        from ghost.backend.server import app
+
+        client = app.test_client()
+        response = client.post(
+            "/api/investigate",
+            json={
+                "target": "johndoe",
+                "input_type": "username",
+                "authorized_use": True,
+                "scope": "self-audit",
+                "modules": ["username"],
+            },
+        )
+
+        assert response.status_code == 202
+        assert response.get_json()["status"] == "running"
+        mock_thread.return_value.start.assert_called_once()
 
 
 # ── GhostInvestigator (mocked modules) ─────────────────────────────

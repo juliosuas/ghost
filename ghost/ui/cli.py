@@ -2,7 +2,6 @@
 
 import asyncio
 import sys
-from datetime import datetime
 
 import click
 from rich.console import Console
@@ -11,13 +10,12 @@ from rich.table import Table
 from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TimeElapsedColumn
 from rich.prompt import Prompt, Confirm
 from rich.tree import Tree
-from rich.layout import Layout
 from rich.text import Text
-from rich.markdown import Markdown
 from rich import box
 
-from ghost.core.investigator import GhostInvestigator, INPUT_TYPE_MODULES
+from ghost.core.investigator import GhostInvestigator
 from ghost.core.config import config
+from ghost.core.doctor import run_doctor_checks
 
 console = Console()
 
@@ -65,8 +63,11 @@ def create_progress():
 @click.option("--modules", "-m", help="Comma-separated modules to run")
 @click.option("--output", "-o", help="Output file path")
 @click.option("--format", "-f", "fmt", default="html", help="Report format: html/pdf/json")
+@click.option("--no-ai", is_flag=True, help="Disable OpenAI calls and use deterministic heuristic analysis")
+@click.option("--scope", default="authorized CLI investigation", help="Authorized scope/purpose recorded in report provenance")
+@click.option("--authorized", is_flag=True, help="Acknowledge this investigation is authorized")
 @click.pass_context
-def cli(ctx, target, input_type, modules, output, fmt):
+def cli(ctx, target, input_type, modules, output, fmt, no_ai, scope, authorized):
     """Ghost — AI-Powered OSINT Investigation Platform"""
     if ctx.invoked_subcommand is not None:
         return
@@ -76,7 +77,7 @@ def cli(ctx, target, input_type, modules, output, fmt):
     if target:
         # Direct investigation mode
         module_list = modules.split(",") if modules else None
-        run_investigation(target, input_type, module_list, output, fmt)
+        run_investigation(target, input_type, module_list, output, fmt, no_ai=no_ai, scope=scope, authorized=authorized)
     else:
         # Interactive mode
         interactive_menu()
@@ -88,11 +89,14 @@ def cli(ctx, target, input_type, modules, output, fmt):
 @click.option("--modules", "-m", help="Comma-separated modules")
 @click.option("--output", "-o")
 @click.option("--format", "-f", "fmt", default="html")
-def investigate(target, input_type, modules, output, fmt):
+@click.option("--no-ai", is_flag=True, help="Disable OpenAI calls and use deterministic heuristic analysis")
+@click.option("--scope", default="authorized CLI investigation", help="Authorized scope/purpose recorded in report provenance")
+@click.option("--authorized", is_flag=True, help="Acknowledge this investigation is authorized")
+def investigate(target, input_type, modules, output, fmt, no_ai, scope, authorized):
     """Run an investigation on a target."""
     print_banner()
     module_list = modules.split(",") if modules else None
-    run_investigation(target, input_type, module_list, output, fmt)
+    run_investigation(target, input_type, module_list, output, fmt, no_ai=no_ai, scope=scope, authorized=authorized)
 
 
 @cli.command()
@@ -100,6 +104,25 @@ def interactive():
     """Launch interactive investigation mode."""
     print_banner()
     interactive_menu()
+
+
+@cli.command()
+def doctor():
+    """Check local Ghost configuration and optional capabilities."""
+    print_banner()
+
+    table = Table(title="Ghost Doctor", box=box.ROUNDED, border_style="green")
+    table.add_column("Check", style="bold")
+    table.add_column("Status")
+    table.add_column("Detail", overflow="fold")
+
+    def add(name: str, ok: bool, detail: str, severity: str = "warn"):
+        status = "[green]OK[/green]" if ok else "[red]FAIL[/red]" if severity == "error" else "[yellow]WARN[/yellow]"
+        table.add_row(name, status, detail)
+
+    for check in run_doctor_checks():
+        add(check.name, check.ok, check.detail, check.severity)
+    console.print(table)
 
 
 def interactive_menu():
@@ -150,7 +173,6 @@ def interactive_menu():
 
         modules = None
         if choice == "7":
-            available = list(INPUT_TYPE_MODULES.keys())
             console.print(f"[dim]Available modules: {', '.join(config.enabled_modules)}[/dim]")
             mod_input = Prompt.ask("[green]Enter modules (comma-separated)")
             modules = [m.strip() for m in mod_input.split(",")]
@@ -161,67 +183,86 @@ def interactive_menu():
             run_investigation(target, input_type, modules, None, fmt)
 
 
-def run_investigation(target: str, input_type: str, modules: list = None, output: str = None, fmt: str = "html"):
+def run_investigation(
+    target: str,
+    input_type: str,
+    modules: list = None,
+    output: str = None,
+    fmt: str = "html",
+    no_ai: bool = False,
+    scope: str = "authorized CLI investigation",
+    authorized: bool = False,
+):
     """Execute an investigation with progress display."""
-    investigator = GhostInvestigator()
+    original_openai_key = config.openai_api_key
+    if no_ai:
+        config.openai_api_key = ""
+    try:
+        investigator = GhostInvestigator()
 
-    console.print()
-    console.print(Panel(
-        f"[bold green]TARGET:[/bold green] {target}\n"
-        f"[bold green]TYPE:[/bold green] {input_type}\n"
-        f"[bold green]MODULES:[/bold green] {', '.join(modules) if modules else 'auto'}",
-        title="[bold green]INVESTIGATION STARTING[/bold green]",
-        border_style="green",
-    ))
-    console.print()
+        console.print()
+        console.print(Panel(
+            f"[bold green]TARGET:[/bold green] {target}\n"
+            f"[bold green]TYPE:[/bold green] {input_type}\n"
+            f"[bold green]MODULES:[/bold green] {', '.join(modules) if modules else 'auto'}\n"
+            f"[bold green]AI:[/bold green] {'disabled' if no_ai else 'enabled when configured'}\n"
+            f"[bold green]SCOPE:[/bold green] {scope}\n"
+            f"[bold green]AUTHORIZED:[/bold green] {'yes' if authorized else 'not acknowledged'}",
+            title="[bold green]INVESTIGATION STARTING[/bold green]",
+            border_style="green",
+        ))
+        console.print()
 
-    # Progress tracking
-    module_tasks = {}
+        # Progress tracking
+        module_tasks = {}
 
-    with create_progress() as progress:
-        main_task = progress.add_task("Investigation", total=100, status="initializing...")
+        with create_progress() as progress:
+            main_task = progress.add_task("Investigation", total=100, status="initializing...")
 
-        def progress_callback(module, status, detail):
-            if module == "complete":
-                progress.update(main_task, completed=100, status="Complete!")
-                return
+            def progress_callback(module, status, detail):
+                if module == "complete":
+                    progress.update(main_task, completed=100, status="Complete!")
+                    return
 
-            if module not in module_tasks:
-                module_tasks[module] = progress.add_task(
-                    f"  {module}", total=100, status=status
-                )
+                if module not in module_tasks:
+                    module_tasks[module] = progress.add_task(
+                        f"  {module}", total=100, status=status
+                    )
 
-            if status == "done":
-                progress.update(module_tasks[module], completed=100, status=detail)
-            elif status == "error":
-                progress.update(module_tasks[module], completed=100, status=f"[red]{detail}[/red]")
-            else:
-                progress.update(module_tasks[module], completed=50, status=detail)
+                if status == "done":
+                    progress.update(module_tasks[module], completed=100, status=detail)
+                elif status == "error":
+                    progress.update(module_tasks[module], completed=100, status=f"[red]{detail}[/red]")
+                else:
+                    progress.update(module_tasks[module], completed=50, status=detail)
 
-            # Update main progress
-            done_count = sum(1 for m in module_tasks.values() if progress.tasks[m].completed >= 100)
-            total_modules = max(len(module_tasks), 1)
-            progress.update(main_task, completed=int(done_count / total_modules * 90), status=f"{done_count}/{total_modules} modules")
+                # Update main progress
+                done_count = sum(1 for m in module_tasks.values() if progress.tasks[m].completed >= 100)
+                total_modules = max(len(module_tasks), 1)
+                progress.update(main_task, completed=int(done_count / total_modules * 90), status=f"{done_count}/{total_modules} modules")
 
-        investigator.set_progress_callback(progress_callback)
+            investigator.set_progress_callback(progress_callback)
 
-        # Run the investigation
-        investigation = asyncio.run(
-            investigator.investigate_async(target, input_type, modules)
-        )
+            # Run the investigation
+            investigation = asyncio.run(
+                investigator.investigate_async(target, input_type, modules, scope=scope, authorized_use=authorized)
+            )
 
-    console.print()
+        console.print()
 
-    # Display results
-    display_results(investigation)
+        # Display results
+        display_results(investigation)
 
-    # Generate report
-    report_path = investigator.generate_report(investigation, fmt, output)
-    console.print()
-    console.print(Panel(
-        f"[bold green]Report saved to:[/bold green] {report_path}",
-        border_style="green",
-    ))
+        # Generate report
+        report_path = investigator.generate_report(investigation, fmt, output)
+        console.print()
+        console.print(Panel(
+            f"[bold green]Report saved to:[/bold green] {report_path}",
+            border_style="green",
+        ))
+    finally:
+        if no_ai:
+            config.openai_api_key = original_openai_key
 
 
 def display_results(investigation):

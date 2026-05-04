@@ -1,7 +1,6 @@
 """Generate executive summaries of investigations."""
 
 import json
-from typing import Any
 
 from ghost.core.config import Config
 

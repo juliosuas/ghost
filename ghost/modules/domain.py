@@ -1,10 +1,8 @@
 """Domain/website OSINT — WHOIS, DNS, subdomains, tech stack, SSL, Wayback."""
 
 import asyncio
-import json
 import ssl
 import socket
-from datetime import datetime
 from typing import Any
 
 import aiohttp

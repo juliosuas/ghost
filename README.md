@@ -119,6 +119,12 @@ python -m ghost.ui.cli --target "+15551234567" --type phone
 
 # Domain reconnaissance
 python -m ghost.ui.cli --target "example.com" --type domain
+
+# Deterministic demo mode without OpenAI calls
+ghost investigate johndoe --type username --modules username --no-ai --authorized --scope "self-audit demo" --format json
+
+# Check local setup, database, keys, and optional tools
+ghost doctor
 ```
 
 ## 🔧 Configuration
@@ -133,6 +139,20 @@ Copy `.env.example` to `.env` and add your API keys:
 | `GOOGLE_CX` / `GOOGLE_API_KEY` | Google Custom Search | No | ✅ |
 | `TWITTER_BEARER_TOKEN` | Twitter/X API | No | ✅ |
 | `IPINFO_TOKEN` | IP Geolocation | No | ✅ |
+
+### Storage
+
+Ghost v2 stores investigations, findings, entities, and graph relationships in
+SQLite by default instead of JSON files. This gives local users durable,
+queryable storage without requiring a separate database server.
+
+```env
+DATABASE_URL=sqlite:///./ghost/data/ghost.db
+```
+
+PostgreSQL is on the roadmap behind the storage adapter boundary. For now,
+non-SQLite `DATABASE_URL` values fail explicitly so deployments do not silently
+write data to the wrong place.
 
 > **Note:** Ghost works with just an OpenAI key. Additional keys unlock more modules.
 
@@ -157,7 +177,7 @@ python -m ghost.backend.server
 # Submit an investigation
 curl -X POST http://localhost:5000/api/investigate \
   -H "Content-Type: application/json" \
-  -d '{"target": "johndoe", "type": "username"}'
+  -d '{"target": "johndoe", "input_type": "username", "authorized_use": true, "scope": "self-audit"}'
 ```
 
 ## 🏗️ Architecture

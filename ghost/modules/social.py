@@ -1,7 +1,6 @@
 """Social media deep dive — profile analysis across major platforms."""
 
 import asyncio
-import json
 import aiohttp
 from typing import Any
 
@@ -71,8 +70,6 @@ class SocialModule:
                 headers = {"User-Agent": self.config.user_agent}
                 async with session.get(url, headers=headers) as resp:
                     if resp.status == 200:
-                        text = await resp.text()
-                        # Try to extract data from page
                         return {
                             "found": True,
                             "url": url,
