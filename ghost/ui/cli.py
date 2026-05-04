@@ -1,8 +1,6 @@
 """Rich CLI with interactive menus and progress tracking."""
 
 import asyncio
-import importlib.util
-import shutil
 import sys
 
 import click
@@ -17,7 +15,7 @@ from rich import box
 
 from ghost.core.investigator import GhostInvestigator
 from ghost.core.config import config
-from ghost.backend.db import DB_PATH, get_connection, init_db
+from ghost.core.doctor import run_doctor_checks
 
 console = Console()
 
@@ -114,33 +112,12 @@ def doctor():
     table.add_column("Status")
     table.add_column("Detail", overflow="fold")
 
-    def add(name: str, ok: bool, detail: str):
-        table.add_row(name, "[green]OK[/green]" if ok else "[yellow]WARN[/yellow]", detail)
+    def add(name: str, ok: bool, detail: str, severity: str = "warn"):
+        status = "[green]OK[/green]" if ok else "[red]FAIL[/red]" if severity == "error" else "[yellow]WARN[/yellow]"
+        table.add_row(name, status, detail)
 
-    try:
-        init_db()
-        with get_connection() as conn:
-            conn.execute("SELECT 1").fetchone()
-        add("database", True, str(DB_PATH))
-    except Exception as exc:
-        add("database", False, str(exc))
-
-    add("OpenAI key", config.has_api_key("openai_api_key"), "set" if config.has_api_key("openai_api_key") else "missing; fallback summaries still work")
-
-    for package, label in [
-        ("aiohttp", "HTTP collection"),
-        ("rich", "CLI UI"),
-        ("flask", "REST API"),
-        ("phonenumbers", "Phone module"),
-        ("dns", "Domain DNS module"),
-    ]:
-        add(label, importlib.util.find_spec(package) is not None, package)
-
-    for binary, label in [("sherlock", "Sherlock optional username coverage")]:
-        found = shutil.which(binary)
-        add(label, bool(found), found or "not installed; built-in platform checks still run")
-
-    add("enabled modules", bool(config.enabled_modules), ", ".join(config.enabled_modules))
+    for check in run_doctor_checks():
+        add(check.name, check.ok, check.detail, check.severity)
     console.print(table)
 
 

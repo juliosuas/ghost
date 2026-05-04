@@ -211,6 +211,16 @@ class TestDatabaseConfiguration:
         with pytest.raises(ValueError, match="Unsupported DATABASE_URL scheme"):
             resolve_database_path("postgresql://user:pass@localhost/ghost")
 
+    def test_doctor_checks_return_structured_results(self):
+        from ghost.core.doctor import has_error, run_doctor_checks
+
+        checks = run_doctor_checks()
+        names = {check.name for check in checks}
+
+        assert "database" in names
+        assert "enabled modules" in names
+        assert has_error(checks) is False
+
 
 # ── Report provenance ───────────────────────────────────────────────
 

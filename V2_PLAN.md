@@ -81,3 +81,9 @@ ghost investigate demo_user --type username --modules social --no-ai --format js
 ```
 
 The generated JSON included fallback analysis and report provenance.
+
+## Batch 5 — reusable doctor checks
+
+Extracted doctor checks from CLI into `ghost.core.doctor`. The CLI still renders the table, but API/server startup and future CI can now reuse the same readiness logic without scraping terminal output.
+
+This removes the next engineering smell from Batch 2: doctor is no longer trapped inside the UI layer.
