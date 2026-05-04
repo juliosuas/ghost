@@ -69,3 +69,15 @@ The first batch is correct: canonical package cleanup + SQLite storage + tests. 
 Added report provenance as the next trust primitive. Every generated JSON/HTML report now carries audit metadata: generation time, target/type/id, modules run, source URLs collected from findings, source URL count, module-level errors, and global errors.
 
 Why this matters: Ghost should not just say “found things.” It should show where evidence came from, which modules ran, and what failed. That is the difference between a toy OSINT script and a defensible investigation case file.
+
+## Batch 4 — deterministic demo mode
+
+Added `--no-ai` to the root CLI and `ghost investigate`. This makes demos and CI-style investigations deterministic by forcing heuristic analysis even when `OPENAI_API_KEY` is present. It supports safer public demos and avoids accidental external AI calls during sensitive investigations.
+
+Verified with:
+
+```bash
+ghost investigate demo_user --type username --modules social --no-ai --format json --output /tmp/ghost-demo-report.json
+```
+
+The generated JSON included fallback analysis and report provenance.

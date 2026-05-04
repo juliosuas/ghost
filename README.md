@@ -119,6 +119,12 @@ python -m ghost.ui.cli --target "+15551234567" --type phone
 
 # Domain reconnaissance
 python -m ghost.ui.cli --target "example.com" --type domain
+
+# Deterministic demo mode without OpenAI calls
+ghost investigate johndoe --type username --modules username --no-ai --format json
+
+# Check local setup, database, keys, and optional tools
+ghost doctor
 ```
 
 ## 🔧 Configuration

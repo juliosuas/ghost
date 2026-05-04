@@ -65,8 +65,9 @@ def create_progress():
 @click.option("--modules", "-m", help="Comma-separated modules to run")
 @click.option("--output", "-o", help="Output file path")
 @click.option("--format", "-f", "fmt", default="html", help="Report format: html/pdf/json")
+@click.option("--no-ai", is_flag=True, help="Disable OpenAI calls and use deterministic heuristic analysis")
 @click.pass_context
-def cli(ctx, target, input_type, modules, output, fmt):
+def cli(ctx, target, input_type, modules, output, fmt, no_ai):
     """Ghost — AI-Powered OSINT Investigation Platform"""
     if ctx.invoked_subcommand is not None:
         return
@@ -76,7 +77,7 @@ def cli(ctx, target, input_type, modules, output, fmt):
     if target:
         # Direct investigation mode
         module_list = modules.split(",") if modules else None
-        run_investigation(target, input_type, module_list, output, fmt)
+        run_investigation(target, input_type, module_list, output, fmt, no_ai=no_ai)
     else:
         # Interactive mode
         interactive_menu()
@@ -88,11 +89,12 @@ def cli(ctx, target, input_type, modules, output, fmt):
 @click.option("--modules", "-m", help="Comma-separated modules")
 @click.option("--output", "-o")
 @click.option("--format", "-f", "fmt", default="html")
-def investigate(target, input_type, modules, output, fmt):
+@click.option("--no-ai", is_flag=True, help="Disable OpenAI calls and use deterministic heuristic analysis")
+def investigate(target, input_type, modules, output, fmt, no_ai):
     """Run an investigation on a target."""
     print_banner()
     module_list = modules.split(",") if modules else None
-    run_investigation(target, input_type, module_list, output, fmt)
+    run_investigation(target, input_type, module_list, output, fmt, no_ai=no_ai)
 
 
 @cli.command()
@@ -200,67 +202,82 @@ def interactive_menu():
             run_investigation(target, input_type, modules, None, fmt)
 
 
-def run_investigation(target: str, input_type: str, modules: list = None, output: str = None, fmt: str = "html"):
+def run_investigation(
+    target: str,
+    input_type: str,
+    modules: list = None,
+    output: str = None,
+    fmt: str = "html",
+    no_ai: bool = False,
+):
     """Execute an investigation with progress display."""
-    investigator = GhostInvestigator()
+    original_openai_key = config.openai_api_key
+    if no_ai:
+        config.openai_api_key = ""
+    try:
+        investigator = GhostInvestigator()
 
-    console.print()
-    console.print(Panel(
-        f"[bold green]TARGET:[/bold green] {target}\n"
-        f"[bold green]TYPE:[/bold green] {input_type}\n"
-        f"[bold green]MODULES:[/bold green] {', '.join(modules) if modules else 'auto'}",
-        title="[bold green]INVESTIGATION STARTING[/bold green]",
-        border_style="green",
-    ))
-    console.print()
+        console.print()
+        console.print(Panel(
+            f"[bold green]TARGET:[/bold green] {target}\n"
+            f"[bold green]TYPE:[/bold green] {input_type}\n"
+            f"[bold green]MODULES:[/bold green] {', '.join(modules) if modules else 'auto'}\n"
+            f"[bold green]AI:[/bold green] {'disabled' if no_ai else 'enabled when configured'}",
+            title="[bold green]INVESTIGATION STARTING[/bold green]",
+            border_style="green",
+        ))
+        console.print()
 
-    # Progress tracking
-    module_tasks = {}
+        # Progress tracking
+        module_tasks = {}
 
-    with create_progress() as progress:
-        main_task = progress.add_task("Investigation", total=100, status="initializing...")
+        with create_progress() as progress:
+            main_task = progress.add_task("Investigation", total=100, status="initializing...")
 
-        def progress_callback(module, status, detail):
-            if module == "complete":
-                progress.update(main_task, completed=100, status="Complete!")
-                return
+            def progress_callback(module, status, detail):
+                if module == "complete":
+                    progress.update(main_task, completed=100, status="Complete!")
+                    return
 
-            if module not in module_tasks:
-                module_tasks[module] = progress.add_task(
-                    f"  {module}", total=100, status=status
-                )
+                if module not in module_tasks:
+                    module_tasks[module] = progress.add_task(
+                        f"  {module}", total=100, status=status
+                    )
 
-            if status == "done":
-                progress.update(module_tasks[module], completed=100, status=detail)
-            elif status == "error":
-                progress.update(module_tasks[module], completed=100, status=f"[red]{detail}[/red]")
-            else:
-                progress.update(module_tasks[module], completed=50, status=detail)
+                if status == "done":
+                    progress.update(module_tasks[module], completed=100, status=detail)
+                elif status == "error":
+                    progress.update(module_tasks[module], completed=100, status=f"[red]{detail}[/red]")
+                else:
+                    progress.update(module_tasks[module], completed=50, status=detail)
 
-            # Update main progress
-            done_count = sum(1 for m in module_tasks.values() if progress.tasks[m].completed >= 100)
-            total_modules = max(len(module_tasks), 1)
-            progress.update(main_task, completed=int(done_count / total_modules * 90), status=f"{done_count}/{total_modules} modules")
+                # Update main progress
+                done_count = sum(1 for m in module_tasks.values() if progress.tasks[m].completed >= 100)
+                total_modules = max(len(module_tasks), 1)
+                progress.update(main_task, completed=int(done_count / total_modules * 90), status=f"{done_count}/{total_modules} modules")
 
-        investigator.set_progress_callback(progress_callback)
+            investigator.set_progress_callback(progress_callback)
 
-        # Run the investigation
-        investigation = asyncio.run(
-            investigator.investigate_async(target, input_type, modules)
-        )
+            # Run the investigation
+            investigation = asyncio.run(
+                investigator.investigate_async(target, input_type, modules)
+            )
 
-    console.print()
+        console.print()
 
-    # Display results
-    display_results(investigation)
+        # Display results
+        display_results(investigation)
 
-    # Generate report
-    report_path = investigator.generate_report(investigation, fmt, output)
-    console.print()
-    console.print(Panel(
-        f"[bold green]Report saved to:[/bold green] {report_path}",
-        border_style="green",
-    ))
+        # Generate report
+        report_path = investigator.generate_report(investigation, fmt, output)
+        console.print()
+        console.print(Panel(
+            f"[bold green]Report saved to:[/bold green] {report_path}",
+            border_style="green",
+        ))
+    finally:
+        if no_ai:
+            config.openai_api_key = original_openai_key
 
 
 def display_results(investigation):
