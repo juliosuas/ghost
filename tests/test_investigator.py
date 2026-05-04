@@ -212,6 +212,34 @@ class TestDatabaseConfiguration:
             resolve_database_path("postgresql://user:pass@localhost/ghost")
 
 
+# ── Report provenance ───────────────────────────────────────────────
+
+class TestReportProvenance:
+    def test_json_report_includes_provenance(self, tmp_path):
+        from ghost.core.report_generator import ReportGenerator
+
+        inv = Investigation("johndoe", "username")
+        inv.findings = {
+            "username": {
+                "profiles": [
+                    {"platform": "GitHub", "url": "https://github.com/johndoe", "status": "found"},
+                    {"platform": "GitHub", "url": "https://github.com/johndoe", "status": "found"},
+                ]
+            },
+            "social": {"error": "rate limited"},
+        }
+        output = tmp_path / "report.json"
+
+        ReportGenerator().generate(inv, "json", str(output))
+
+        data = json.loads(output.read_text())
+        provenance = data["provenance"]
+        assert provenance["modules_run"] == ["social", "username"]
+        assert provenance["source_urls"] == ["https://github.com/johndoe"]
+        assert provenance["source_url_count"] == 1
+        assert provenance["module_errors"] == {"social": "rate limited"}
+
+
 # ── GhostInvestigator (mocked modules) ─────────────────────────────
 
 class TestGhostInvestigator:

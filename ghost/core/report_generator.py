@@ -22,6 +22,7 @@ class ReportGenerator:
     def generate(self, investigation, format: str = "html", output_path: str = None) -> str:
         """Generate a report and return the output path."""
         inv = investigation if isinstance(investigation, dict) else investigation.to_dict()
+        inv = {**inv, "provenance": self._build_provenance(inv)}
 
         if output_path is None:
             inv_dir = INVESTIGATIONS_DIR / inv["id"]
@@ -53,6 +54,7 @@ class ReportGenerator:
             summary=inv.get("summary", ""),
             risk_score=inv.get("risk_score", 0),
             errors=inv.get("errors", []),
+            provenance=inv.get("provenance", {}),
         )
 
         Path(output_path).parent.mkdir(parents=True, exist_ok=True)
@@ -77,6 +79,44 @@ class ReportGenerator:
             return output_path
         except ImportError:
             return html_path  # Fallback to HTML if weasyprint unavailable
+
+    def _build_provenance(self, inv: dict) -> dict:
+        """Build audit metadata for defensible investigation reports."""
+        findings = inv.get("findings", {})
+        modules = sorted(findings)
+        source_urls = []
+
+        def collect_urls(value):
+            if isinstance(value, dict):
+                for key, nested in value.items():
+                    if key == "url" and isinstance(nested, str) and nested.startswith(("http://", "https://")):
+                        source_urls.append(nested)
+                    else:
+                        collect_urls(nested)
+            elif isinstance(value, list):
+                for item in value:
+                    collect_urls(item)
+
+        collect_urls(findings)
+
+        module_errors = {
+            module: data["error"]
+            for module, data in findings.items()
+            if isinstance(data, dict) and data.get("error")
+        }
+
+        return {
+            "generated_at": datetime.now(timezone.utc).isoformat(),
+            "target": inv.get("target"),
+            "input_type": inv.get("input_type"),
+            "investigation_id": inv.get("id"),
+            "modules_run": modules,
+            "module_count": len(modules),
+            "source_urls": sorted(set(source_urls)),
+            "source_url_count": len(set(source_urls)),
+            "module_errors": module_errors,
+            "global_errors": inv.get("errors", []),
+        }
 
     def _fallback_template(self) -> str:
         return """<!DOCTYPE html>
@@ -138,6 +178,15 @@ class ReportGenerator:
   {% endif %}
 </div>
 {% endfor %}
+
+{% if provenance %}
+<div class="section">
+  <h2>Provenance</h2>
+  <p>Modules run: {{ provenance.modules_run | join(', ') }}</p>
+  <p>Source URLs captured: {{ provenance.source_url_count }}</p>
+  <pre>{{ provenance | tojson(indent=2) }}</pre>
+</div>
+{% endif %}
 
 {% if correlations %}
 <div class="section">

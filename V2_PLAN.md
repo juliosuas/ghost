@@ -63,3 +63,9 @@ Hold scope on new OSINT modules for this v2 sprint. Expand only where it increas
 
 ### Engineering verdict
 The first batch is correct: canonical package cleanup + SQLite storage + tests. Next engineering risk is that `doctor` currently lives in CLI only; the same checks should become reusable functions later so API/server startup can share them.
+
+## Batch 3 — report provenance
+
+Added report provenance as the next trust primitive. Every generated JSON/HTML report now carries audit metadata: generation time, target/type/id, modules run, source URLs collected from findings, source URL count, module-level errors, and global errors.
+
+Why this matters: Ghost should not just say “found things.” It should show where evidence came from, which modules ran, and what failed. That is the difference between a toy OSINT script and a defensible investigation case file.
