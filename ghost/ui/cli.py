@@ -64,8 +64,10 @@ def create_progress():
 @click.option("--output", "-o", help="Output file path")
 @click.option("--format", "-f", "fmt", default="html", help="Report format: html/pdf/json")
 @click.option("--no-ai", is_flag=True, help="Disable OpenAI calls and use deterministic heuristic analysis")
+@click.option("--scope", default="authorized CLI investigation", help="Authorized scope/purpose recorded in report provenance")
+@click.option("--authorized", is_flag=True, help="Acknowledge this investigation is authorized")
 @click.pass_context
-def cli(ctx, target, input_type, modules, output, fmt, no_ai):
+def cli(ctx, target, input_type, modules, output, fmt, no_ai, scope, authorized):
     """Ghost — AI-Powered OSINT Investigation Platform"""
     if ctx.invoked_subcommand is not None:
         return
@@ -75,7 +77,7 @@ def cli(ctx, target, input_type, modules, output, fmt, no_ai):
     if target:
         # Direct investigation mode
         module_list = modules.split(",") if modules else None
-        run_investigation(target, input_type, module_list, output, fmt, no_ai=no_ai)
+        run_investigation(target, input_type, module_list, output, fmt, no_ai=no_ai, scope=scope, authorized=authorized)
     else:
         # Interactive mode
         interactive_menu()
@@ -88,11 +90,13 @@ def cli(ctx, target, input_type, modules, output, fmt, no_ai):
 @click.option("--output", "-o")
 @click.option("--format", "-f", "fmt", default="html")
 @click.option("--no-ai", is_flag=True, help="Disable OpenAI calls and use deterministic heuristic analysis")
-def investigate(target, input_type, modules, output, fmt, no_ai):
+@click.option("--scope", default="authorized CLI investigation", help="Authorized scope/purpose recorded in report provenance")
+@click.option("--authorized", is_flag=True, help="Acknowledge this investigation is authorized")
+def investigate(target, input_type, modules, output, fmt, no_ai, scope, authorized):
     """Run an investigation on a target."""
     print_banner()
     module_list = modules.split(",") if modules else None
-    run_investigation(target, input_type, module_list, output, fmt, no_ai=no_ai)
+    run_investigation(target, input_type, module_list, output, fmt, no_ai=no_ai, scope=scope, authorized=authorized)
 
 
 @cli.command()
@@ -186,6 +190,8 @@ def run_investigation(
     output: str = None,
     fmt: str = "html",
     no_ai: bool = False,
+    scope: str = "authorized CLI investigation",
+    authorized: bool = False,
 ):
     """Execute an investigation with progress display."""
     original_openai_key = config.openai_api_key
@@ -199,7 +205,9 @@ def run_investigation(
             f"[bold green]TARGET:[/bold green] {target}\n"
             f"[bold green]TYPE:[/bold green] {input_type}\n"
             f"[bold green]MODULES:[/bold green] {', '.join(modules) if modules else 'auto'}\n"
-            f"[bold green]AI:[/bold green] {'disabled' if no_ai else 'enabled when configured'}",
+            f"[bold green]AI:[/bold green] {'disabled' if no_ai else 'enabled when configured'}\n"
+            f"[bold green]SCOPE:[/bold green] {scope}\n"
+            f"[bold green]AUTHORIZED:[/bold green] {'yes' if authorized else 'not acknowledged'}",
             title="[bold green]INVESTIGATION STARTING[/bold green]",
             border_style="green",
         ))
@@ -237,7 +245,7 @@ def run_investigation(
 
             # Run the investigation
             investigation = asyncio.run(
-                investigator.investigate_async(target, input_type, modules)
+                investigator.investigate_async(target, input_type, modules, scope=scope, authorized_use=authorized)
             )
 
         console.print()

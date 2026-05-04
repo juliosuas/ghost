@@ -51,10 +51,12 @@ class TestInvestigationModel:
         assert isinstance(inv.id, str) and len(inv.id) == 36
 
     def test_to_dict(self):
-        inv = Investigation("test@example.com", "email")
+        inv = Investigation("test@example.com", "email", scope="self-audit", authorized_use=True)
         d = inv.to_dict()
         assert d["target"] == "test@example.com"
         assert d["input_type"] == "email"
+        assert d["scope"] == "self-audit"
+        assert d["authorized_use"] is True
         assert "id" in d
         assert "started_at" in d
         assert d["status"] == "pending"
@@ -117,6 +119,7 @@ class TestDatabase:
         loaded = get_investigation(inv.id)
         assert loaded is not None
         assert loaded["target"] == "johndoe"
+        assert loaded["authorized_use"] is False
         assert loaded["status"] == "completed"
         assert loaded["risk_score"] == 0.65
         assert "username" in loaded["findings"]
@@ -228,7 +231,7 @@ class TestReportProvenance:
     def test_json_report_includes_provenance(self, tmp_path):
         from ghost.core.report_generator import ReportGenerator
 
-        inv = Investigation("johndoe", "username")
+        inv = Investigation("johndoe", "username", scope="consented demo", authorized_use=True)
         inv.findings = {
             "username": {
                 "profiles": [
@@ -245,6 +248,8 @@ class TestReportProvenance:
         data = json.loads(output.read_text())
         provenance = data["provenance"]
         assert provenance["modules_run"] == ["social", "username"]
+        assert provenance["scope"] == "consented demo"
+        assert provenance["authorized_use"] is True
         assert provenance["source_urls"] == ["https://github.com/johndoe"]
         assert provenance["source_url_count"] == 1
         assert provenance["module_errors"] == {"social": "rate limited"}

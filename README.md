@@ -121,7 +121,7 @@ python -m ghost.ui.cli --target "+15551234567" --type phone
 python -m ghost.ui.cli --target "example.com" --type domain
 
 # Deterministic demo mode without OpenAI calls
-ghost investigate johndoe --type username --modules username --no-ai --format json
+ghost investigate johndoe --type username --modules username --no-ai --authorized --scope "self-audit demo" --format json
 
 # Check local setup, database, keys, and optional tools
 ghost doctor
@@ -177,7 +177,7 @@ python -m ghost.backend.server
 # Submit an investigation
 curl -X POST http://localhost:5000/api/investigate \
   -H "Content-Type: application/json" \
-  -d '{"target": "johndoe", "type": "username"}'
+  -d '{"target": "johndoe", "input_type": "username", "authorized_use": true, "scope": "self-audit"}'
 ```
 
 ## 🏗️ Architecture

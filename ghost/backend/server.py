@@ -46,7 +46,8 @@ def start_investigation():
     """Start a new investigation.
 
     Expects JSON body with at least one of: name, email, phone, username.
-    Optional: input_type, modules (list).
+    Optional: input_type, modules (list), scope.
+    Required for v2 safety: authorized_use=true.
     """
     data = request.get_json(silent=True) or {}
 
@@ -65,11 +66,18 @@ def start_investigation():
     if not target:
         return jsonify({"error": "Provide at least one of: target, name, email, phone, username"}), 400
 
+    if data.get("authorized_use") is not True:
+        return jsonify({
+            "error": "authorized_use must be true for API investigations",
+            "detail": "Only run Ghost for authorized security research, journalism, law enforcement, or self-audits.",
+        }), 400
+
     modules = data.get("modules")
+    scope = data.get("scope", "authorized API investigation")
 
     # Create investigation record immediately so the client can poll
     investigator = GhostInvestigator()
-    inv = Investigation(target, input_type)
+    inv = Investigation(target, input_type, scope=scope, authorized_use=True)
     inv.status = "running"
     save_investigation(inv.to_dict())
 
@@ -81,7 +89,7 @@ def start_investigation():
         asyncio.set_event_loop(loop)
         try:
             result = loop.run_until_complete(
-                investigator.investigate_async(target, input_type, modules)
+                investigator.investigate_async(target, input_type, modules, scope=scope, authorized_use=True)
             )
             # Overwrite with actual ID so DB record matches
             result.id = inv_id

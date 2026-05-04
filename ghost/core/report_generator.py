@@ -110,6 +110,8 @@ class ReportGenerator:
             "target": inv.get("target"),
             "input_type": inv.get("input_type"),
             "investigation_id": inv.get("id"),
+            "scope": inv.get("scope", ""),
+            "authorized_use": bool(inv.get("authorized_use", False)),
             "modules_run": modules,
             "module_count": len(modules),
             "source_urls": sorted(set(source_urls)),

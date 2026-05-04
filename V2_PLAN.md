@@ -87,3 +87,14 @@ The generated JSON included fallback analysis and report provenance.
 Extracted doctor checks from CLI into `ghost.core.doctor`. The CLI still renders the table, but API/server startup and future CI can now reuse the same readiness logic without scraping terminal output.
 
 This removes the next engineering smell from Batch 2: doctor is no longer trapped inside the UI layer.
+
+## Batch 6 — authorization scope provenance
+
+Added scope/authorization metadata to investigations and reports:
+
+- CLI supports `--scope` and `--authorized`.
+- API requires `authorized_use: true` before starting an investigation.
+- Database stores `scope` and `authorized_use` with migrations for existing SQLite files.
+- Report provenance includes both fields.
+
+This is a CSO/product trust move: Ghost v2 should make authorized-use boundaries visible in the case file instead of burying them in the README disclaimer.

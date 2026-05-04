@@ -46,10 +46,12 @@ def _detect_input_type(target: str) -> str:
 class Investigation:
     """Represents a single investigation with all collected data."""
 
-    def __init__(self, target: str, input_type: str):
+    def __init__(self, target: str, input_type: str, scope: str = "", authorized_use: bool = False):
         self.id = str(uuid.uuid4())
         self.target = target
         self.input_type = input_type
+        self.scope = scope
+        self.authorized_use = authorized_use
         self.started_at = datetime.now(timezone.utc)
         self.completed_at: Optional[datetime] = None
         self.status = "pending"
@@ -65,6 +67,8 @@ class Investigation:
             "id": self.id,
             "target": self.target,
             "input_type": self.input_type,
+            "scope": self.scope,
+            "authorized_use": self.authorized_use,
             "started_at": self.started_at.isoformat(),
             "completed_at": self.completed_at.isoformat() if self.completed_at else None,
             "status": self.status,
@@ -110,21 +114,25 @@ class GhostInvestigator:
         target: str,
         input_type: str = "auto",
         modules: Optional[list] = None,
+        scope: str = "",
+        authorized_use: bool = False,
     ) -> Investigation:
         """Run a full investigation synchronously."""
-        return asyncio.run(self.investigate_async(target, input_type, modules))
+        return asyncio.run(self.investigate_async(target, input_type, modules, scope, authorized_use))
 
     async def investigate_async(
         self,
         target: str,
         input_type: str = "auto",
         modules: Optional[list] = None,
+        scope: str = "",
+        authorized_use: bool = False,
     ) -> Investigation:
         """Run a full investigation asynchronously."""
         if input_type == "auto":
             input_type = _detect_input_type(target)
 
-        investigation = Investigation(target, input_type)
+        investigation = Investigation(target, input_type, scope=scope, authorized_use=authorized_use)
         investigation.status = "running"
 
         # Determine which modules to run

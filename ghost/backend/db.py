@@ -88,6 +88,8 @@ def init_db():
                 id TEXT PRIMARY KEY,
                 target TEXT NOT NULL,
                 input_type TEXT NOT NULL,
+                scope TEXT DEFAULT '',
+                authorized_use INTEGER NOT NULL DEFAULT 0,
                 status TEXT NOT NULL DEFAULT 'pending',
                 started_at TEXT NOT NULL,
                 completed_at TEXT,
@@ -143,6 +145,13 @@ def init_db():
             CREATE INDEX IF NOT EXISTS idx_findings_investigation ON findings(investigation_id);
             CREATE INDEX IF NOT EXISTS idx_relationships_investigation ON relationships(investigation_id);
         """)
+        existing_columns = {
+            row["name"] for row in conn.execute("PRAGMA table_info(investigations)").fetchall()
+        }
+        if "scope" not in existing_columns:
+            conn.execute("ALTER TABLE investigations ADD COLUMN scope TEXT DEFAULT ''")
+        if "authorized_use" not in existing_columns:
+            conn.execute("ALTER TABLE investigations ADD COLUMN authorized_use INTEGER NOT NULL DEFAULT 0")
         conn.execute(
             "INSERT OR IGNORE INTO schema_migrations (version) VALUES (?)",
             (SCHEMA_VERSION,),
@@ -156,12 +165,14 @@ def save_investigation(inv_dict: dict):
     with get_db() as conn:
         conn.execute("""
             INSERT OR REPLACE INTO investigations
-                (id, target, input_type, status, started_at, completed_at, summary, risk_score, errors)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                (id, target, input_type, scope, authorized_use, status, started_at, completed_at, summary, risk_score, errors)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             inv_dict["id"],
             inv_dict["target"],
             inv_dict["input_type"],
+            inv_dict.get("scope", ""),
+            1 if inv_dict.get("authorized_use", False) else 0,
             inv_dict["status"],
             inv_dict["started_at"],
             inv_dict["completed_at"],
@@ -268,6 +279,7 @@ def get_investigation(investigation_id: str) -> dict | None:
             return None
 
         inv = dict(row)
+        inv["authorized_use"] = bool(inv.get("authorized_use", 0))
         inv["errors"] = json.loads(inv.get("errors", "[]"))
 
         # Load findings
