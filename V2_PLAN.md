@@ -98,3 +98,12 @@ Added scope/authorization metadata to investigations and reports:
 - Report provenance includes both fields.
 
 This is a CSO/product trust move: Ghost v2 should make authorized-use boundaries visible in the case file instead of burying them in the README disclaimer.
+
+## Batch 7 — API safety gate tests
+
+Added API tests for the authorization gate:
+
+- `/api/investigate` rejects requests without `authorized_use: true`.
+- Authorized requests with scope still return `202` and start the background investigation path.
+
+This locks the CSO policy into tests instead of trusting the route code by inspection.

@@ -255,6 +255,39 @@ class TestReportProvenance:
         assert provenance["module_errors"] == {"social": "rate limited"}
 
 
+# ── API safety gates ────────────────────────────────────────────────
+
+class TestApiSafetyGates:
+    def test_api_requires_authorized_use_acknowledgement(self):
+        from ghost.backend.server import app
+
+        client = app.test_client()
+        response = client.post("/api/investigate", json={"target": "johndoe", "input_type": "username"})
+
+        assert response.status_code == 400
+        assert response.get_json()["error"] == "authorized_use must be true for API investigations"
+
+    @patch("ghost.backend.server.threading.Thread")
+    def test_api_accepts_authorized_scope(self, mock_thread):
+        from ghost.backend.server import app
+
+        client = app.test_client()
+        response = client.post(
+            "/api/investigate",
+            json={
+                "target": "johndoe",
+                "input_type": "username",
+                "authorized_use": True,
+                "scope": "self-audit",
+                "modules": ["username"],
+            },
+        )
+
+        assert response.status_code == 202
+        assert response.get_json()["status"] == "running"
+        mock_thread.return_value.start.assert_called_once()
+
+
 # ── GhostInvestigator (mocked modules) ─────────────────────────────
 
 class TestGhostInvestigator:
