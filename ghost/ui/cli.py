@@ -1,6 +1,7 @@
 """Rich CLI with interactive menus and progress tracking."""
 
 import asyncio
+import json
 import sys
 
 import click
@@ -16,6 +17,7 @@ from rich import box
 from ghost.core.investigator import GhostInvestigator
 from ghost.core.config import config
 from ghost.core.doctor import run_doctor_checks
+from ghost.backend.db import get_graph_data, get_investigation, list_investigations
 
 console = Console()
 
@@ -123,6 +125,95 @@ def doctor():
     for check in run_doctor_checks():
         add(check.name, check.ok, check.detail, check.severity)
     console.print(table)
+
+
+@cli.command(name="list")
+@click.option("--limit", default=10, show_default=True, help="Maximum investigations to show")
+@click.option("--offset", default=0, show_default=True, help="Pagination offset")
+@click.option("--json", "as_json", is_flag=True, help="Emit machine-readable JSON")
+def list_cases(limit, offset, as_json):
+    """List saved investigation case files."""
+    investigations = list_investigations(limit=limit, offset=offset)
+
+    if as_json:
+        click.echo(json.dumps(investigations, indent=2, default=str))
+        return
+
+    table = Table(title="Ghost Investigations", box=box.ROUNDED, border_style="green")
+    table.add_column("ID", overflow="fold")
+    table.add_column("Target", style="bold")
+    table.add_column("Type")
+    table.add_column("Status")
+    table.add_column("Risk")
+    table.add_column("Authorized")
+    table.add_column("Scope", overflow="fold")
+
+    for inv in investigations:
+        table.add_row(
+            inv.get("id", "")[:8],
+            inv.get("target", ""),
+            inv.get("input_type", ""),
+            inv.get("status", ""),
+            f"{float(inv.get('risk_score') or 0):.0%}",
+            "yes" if inv.get("authorized_use") else "no",
+            inv.get("scope", ""),
+        )
+
+    if investigations:
+        console.print(table)
+    else:
+        console.print("[dim]No saved investigations yet.[/dim]")
+
+
+@cli.command()
+@click.argument("investigation_id")
+@click.option("--json", "as_json", is_flag=True, help="Emit full machine-readable JSON")
+def show(investigation_id, as_json):
+    """Show one saved investigation by full ID or unique prefix."""
+    investigation = _find_investigation_by_id_or_prefix(investigation_id)
+    if investigation is None:
+        raise click.ClickException(f"No investigation found for '{investigation_id}'")
+    if investigation == "ambiguous":
+        raise click.ClickException(f"Investigation prefix '{investigation_id}' is ambiguous")
+
+    if as_json:
+        click.echo(json.dumps(investigation, indent=2, default=str))
+        return
+
+    console.print(Panel(
+        f"[bold green]ID:[/bold green] {investigation['id']}\n"
+        f"[bold green]Target:[/bold green] {investigation['target']}\n"
+        f"[bold green]Type:[/bold green] {investigation['input_type']}\n"
+        f"[bold green]Status:[/bold green] {investigation['status']}\n"
+        f"[bold green]Risk:[/bold green] {float(investigation.get('risk_score') or 0):.0%}\n"
+        f"[bold green]Authorized:[/bold green] {'yes' if investigation.get('authorized_use') else 'no'}\n"
+        f"[bold green]Scope:[/bold green] {investigation.get('scope', '')}",
+        title="[bold green]CASE FILE[/bold green]",
+        border_style="green",
+    ))
+
+    if investigation.get("summary"):
+        console.print(Panel(investigation["summary"], title="Summary", border_style="green"))
+
+    graph = get_graph_data(investigation["id"]) or {"nodes": [], "links": []}
+    console.print(f"[dim]Findings modules:[/dim] {', '.join(sorted(investigation.get('findings', {}).keys())) or 'none'}")
+    console.print(f"[dim]Graph:[/dim] {len(graph['nodes'])} nodes, {len(graph['links'])} links")
+
+
+def _find_investigation_by_id_or_prefix(investigation_id: str):
+    investigation = get_investigation(investigation_id)
+    if investigation:
+        return investigation
+
+    matches = [
+        item for item in list_investigations(limit=500)
+        if item.get("id", "").startswith(investigation_id)
+    ]
+    if len(matches) == 1:
+        return get_investigation(matches[0]["id"])
+    if len(matches) > 1:
+        return "ambiguous"
+    return None
 
 
 def interactive_menu():

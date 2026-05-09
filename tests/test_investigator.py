@@ -127,10 +127,12 @@ class TestDatabase:
 
     def test_list_investigations(self):
         for i in range(3):
-            inv = Investigation(f"target{i}", "username")
+            inv = Investigation(f"target{i}", "username", scope="client-owned audit", authorized_use=True)
             save_investigation(inv.to_dict())
         results = list_investigations()
         assert len(results) == 3
+        assert results[0]["scope"] == "client-owned audit"
+        assert results[0]["authorized_use"] is True
 
     def test_get_nonexistent(self):
         assert get_investigation("nonexistent-id") is None
@@ -286,6 +288,41 @@ class TestApiSafetyGates:
         assert response.status_code == 202
         assert response.get_json()["status"] == "running"
         mock_thread.return_value.start.assert_called_once()
+
+
+# ── CLI saved case commands ────────────────────────────────────────
+
+class TestCliCaseCommands:
+    def test_cli_list_outputs_saved_case(self):
+        from click.testing import CliRunner
+        from ghost.ui.cli import cli
+
+        inv = Investigation("johndoe", "username", scope="self-audit", authorized_use=True)
+        inv.risk_score = 0.25
+        save_investigation(inv.to_dict())
+
+        result = CliRunner().invoke(cli, ["list", "--json"])
+
+        assert result.exit_code == 0
+        data = json.loads(result.output)
+        assert data[0]["target"] == "johndoe"
+        assert data[0]["scope"] == "self-audit"
+        assert data[0]["authorized_use"] is True
+
+    def test_cli_show_accepts_unique_prefix(self):
+        from click.testing import CliRunner
+        from ghost.ui.cli import cli
+
+        inv = Investigation("janedoe", "username", scope="consented demo", authorized_use=True)
+        inv.summary = "Found public profiles."
+        save_investigation(inv.to_dict())
+
+        result = CliRunner().invoke(cli, ["show", inv.id[:8], "--json"])
+
+        assert result.exit_code == 0
+        data = json.loads(result.output)
+        assert data["id"] == inv.id
+        assert data["summary"] == "Found public profiles."
 
 
 # ── GhostInvestigator (mocked modules) ─────────────────────────────

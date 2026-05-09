@@ -312,10 +312,28 @@ def list_investigations(limit: int = 50, offset: int = 0) -> list[dict]:
     """List all investigations, newest first."""
     with get_db() as conn:
         rows = conn.execute(
-            "SELECT id, target, input_type, status, started_at, completed_at, risk_score FROM investigations ORDER BY started_at DESC LIMIT ? OFFSET ?",
+            """
+            SELECT
+                id,
+                target,
+                input_type,
+                scope,
+                authorized_use,
+                status,
+                started_at,
+                completed_at,
+                risk_score,
+                summary
+            FROM investigations
+            ORDER BY started_at DESC
+            LIMIT ? OFFSET ?
+            """,
             (limit, offset),
         ).fetchall()
-        return [dict(r) for r in rows]
+        investigations = [dict(r) for r in rows]
+        for investigation in investigations:
+            investigation["authorized_use"] = bool(investigation.get("authorized_use", 0))
+        return investigations
 
 
 def get_graph_data(investigation_id: str) -> dict | None:

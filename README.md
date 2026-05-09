@@ -125,6 +125,12 @@ ghost investigate johndoe --type username --modules username --no-ai --authorize
 
 # Check local setup, database, keys, and optional tools
 ghost doctor
+
+# List saved investigation case files
+ghost list
+
+# Show one saved case by full ID or unique prefix
+ghost show 5f3a9c2e
 ```
 
 ## 🔧 Configuration

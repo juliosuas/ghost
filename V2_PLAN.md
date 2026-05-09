@@ -107,3 +107,15 @@ Added API tests for the authorization gate:
 - Authorized requests with scope still return `202` and start the background investigation path.
 
 This locks the CSO policy into tests instead of trusting the route code by inspection.
+
+## Batch 8 — saved case workflow polish
+
+Added the first case-file retrieval polish so Ghost's SQLite work is visible from the CLI, not just hidden behind API/database internals:
+
+- `ghost list` shows saved investigations with target, type, status, risk, authorization, and scope.
+- `ghost list --json` emits machine-readable case summaries for scripts and demos.
+- `ghost show <id-or-prefix>` retrieves a saved case file and summarizes modules + graph size.
+- `ghost show <id-or-prefix> --json` emits the full saved investigation.
+- `list_investigations()` now includes scope, authorized-use flag, risk, and summary so API/CLI users can audit case context without fetching every case one by one.
+
+Verified with `.venv/bin/python -m pytest -q` and `.venv/bin/python -m ruff check .`.
