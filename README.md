@@ -12,7 +12,7 @@
 
 **Multi-vector intelligence gathering with 500+ platform checks, AI-driven analysis, and professional reports.**
 
-[Quick Start](#-quick-start) · [Features](#-features) · [Installation](#-installation) · [Documentation](#-usage) · [Roadmap](#-roadmap) · [Contributing](#-contributing)
+[Quick Start](#-quick-start) · [Features](#-features) · [Installation](#-installation) · [Demo](docs/self-audit-demo.md) · [Roadmap](#-roadmap) · [Contributing](#-contributing)
 
 ---
 
@@ -132,6 +132,8 @@ ghost list
 # Show one saved case by full ID or unique prefix
 ghost show 5f3a9c2e
 ```
+
+For a safe public walkthrough, use the [authorized self-audit demo](docs/self-audit-demo.md).
 
 ## 🔧 Configuration
 
