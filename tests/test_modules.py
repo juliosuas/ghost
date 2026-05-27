@@ -138,6 +138,7 @@ class TestCorrelator:
 
     def test_identity_correlation(self):
         from ghost.core.correlator import Correlator
+
         cfg = Config()
         cfg.openai_api_key = ""  # Disable AI correlation
         correlator = Correlator(cfg)
@@ -165,6 +166,7 @@ class TestCorrelator:
 
     def test_timeline_extraction(self):
         from ghost.core.correlator import Correlator
+
         cfg = Config()
         correlator = Correlator(cfg)
 
@@ -188,6 +190,7 @@ class TestCorrelator:
 
     def test_location_correlation(self):
         from ghost.core.correlator import Correlator
+
         cfg = Config()
         correlator = Correlator(cfg)
 
@@ -208,6 +211,7 @@ class TestAIAnalyzerFallback:
 
     def test_fallback_analysis_basic(self):
         from ghost.ai.analyzer import AIAnalyzer
+
         cfg = Config()
         cfg.openai_api_key = ""
         analyzer = AIAnalyzer(cfg)
@@ -229,6 +233,7 @@ class TestAIAnalyzerFallback:
 
     def test_fallback_no_findings(self):
         from ghost.ai.analyzer import AIAnalyzer
+
         cfg = Config()
         cfg.openai_api_key = ""
         analyzer = AIAnalyzer(cfg)
@@ -242,6 +247,7 @@ class TestSummarizerFallback:
 
     async def test_heuristic_summary(self):
         from ghost.ai.summarizer import Summarizer
+
         cfg = Config()
         cfg.openai_api_key = ""
         summarizer = Summarizer(cfg)

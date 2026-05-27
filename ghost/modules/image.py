@@ -65,6 +65,7 @@ class ImageModule:
         """Extract EXIF metadata from image."""
         try:
             import exifread
+
             tags = exifread.process_file(io.BytesIO(image_data), details=False)
 
             exif = {}
@@ -101,6 +102,7 @@ class ImageModule:
             try:
                 from PIL import Image
                 from PIL.ExifTags import TAGS
+
                 img = Image.open(io.BytesIO(image_data))
                 exif_data = img._getexif()
                 if exif_data:
@@ -129,13 +131,12 @@ class ImageModule:
                             if resp.status == 200:
                                 data = await resp.json()
                                 items = data.get("items", [])
-                                results["engines"].append({
-                                    "engine": "Google",
-                                    "matches": [
-                                        {"title": i["title"], "url": i["link"]}
-                                        for i in items[:10]
-                                    ],
-                                })
+                                results["engines"].append(
+                                    {
+                                        "engine": "Google",
+                                        "matches": [{"title": i["title"], "url": i["link"]} for i in items[:10]],
+                                    }
+                                )
                 except Exception as e:
                     results["engines"].append({"engine": "Google", "error": str(e)})
 
@@ -166,11 +167,13 @@ class ImageModule:
             faces = []
             for i, (location, encoding) in enumerate(zip(face_locations, face_encodings)):
                 top, right, bottom, left = location
-                faces.append({
-                    "id": i,
-                    "bounding_box": {"top": top, "right": right, "bottom": bottom, "left": left},
-                    "encoding_hash": hashlib.md5(encoding.tobytes()).hexdigest(),
-                })
+                faces.append(
+                    {
+                        "id": i,
+                        "bounding_box": {"top": top, "right": right, "bottom": bottom, "left": left},
+                        "encoding_hash": hashlib.md5(encoding.tobytes()).hexdigest(),
+                    }
+                )
 
             return {"face_count": len(faces), "faces": faces}
         except ImportError:
@@ -182,6 +185,7 @@ class ImageModule:
         """Extract GPS coordinates from EXIF and resolve to address."""
         try:
             import exifread
+
             tags = exifread.process_file(io.BytesIO(image_data))
 
             lat = tags.get("GPS GPSLatitude")
@@ -204,6 +208,7 @@ class ImageModule:
             # Reverse geocode
             try:
                 from geopy.geocoders import Nominatim
+
                 geolocator = Nominatim(user_agent="ghost-osint")
                 location = geolocator.reverse(f"{lat_decimal}, {lon_decimal}")
                 if location:

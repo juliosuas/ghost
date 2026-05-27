@@ -58,21 +58,25 @@ class Correlator:
 
         for name, sources in seen_names.items():
             if len(sources) > 1:
-                identities.append({
-                    "type": "name",
-                    "value": name,
-                    "sources": sources,
-                    "confidence": min(0.9, 0.5 + 0.1 * len(sources)),
-                })
+                identities.append(
+                    {
+                        "type": "name",
+                        "value": name,
+                        "sources": sources,
+                        "confidence": min(0.9, 0.5 + 0.1 * len(sources)),
+                    }
+                )
 
         for email, sources in seen_emails.items():
             if len(sources) > 1:
-                identities.append({
-                    "type": "email",
-                    "value": email,
-                    "sources": sources,
-                    "confidence": 0.95,
-                })
+                identities.append(
+                    {
+                        "type": "email",
+                        "value": email,
+                        "sources": sources,
+                        "confidence": 0.95,
+                    }
+                )
 
         return identities
 
@@ -113,12 +117,14 @@ class Correlator:
                         url = p.get("url", "")
                         for uname in all_usernames:
                             if uname in url.lower() and uname != p.get("username", "").lower():
-                                connections.append({
-                                    "type": "username_link",
-                                    "from": uname,
-                                    "to": p.get("platform", module),
-                                    "evidence": url,
-                                })
+                                connections.append(
+                                    {
+                                        "type": "username_link",
+                                        "from": uname,
+                                        "to": p.get("platform", module),
+                                        "evidence": url,
+                                    }
+                                )
 
         return connections
 
@@ -133,31 +139,37 @@ class Correlator:
             # Account creation dates
             created = data.get("created_at") or data.get("creation_date") or data.get("registered")
             if created:
-                events.append({
-                    "date": str(created),
-                    "event": f"Account/entity created on {module}",
-                    "source": module,
-                })
+                events.append(
+                    {
+                        "date": str(created),
+                        "event": f"Account/entity created on {module}",
+                        "source": module,
+                    }
+                )
 
             # Breach dates
             breaches = data.get("breaches", [])
             if isinstance(breaches, list):
                 for breach in breaches:
                     if isinstance(breach, dict) and breach.get("date"):
-                        events.append({
-                            "date": breach["date"],
-                            "event": f"Data breach: {breach.get('name', 'Unknown')}",
-                            "source": "darkweb",
-                        })
+                        events.append(
+                            {
+                                "date": breach["date"],
+                                "event": f"Data breach: {breach.get('name', 'Unknown')}",
+                                "source": "darkweb",
+                            }
+                        )
 
             # Posts/activity
             last_active = data.get("last_active") or data.get("last_post")
             if last_active:
-                events.append({
-                    "date": str(last_active),
-                    "event": f"Last activity on {module}",
-                    "source": module,
-                })
+                events.append(
+                    {
+                        "date": str(last_active),
+                        "event": f"Last activity on {module}",
+                        "source": module,
+                    }
+                )
 
         events.sort(key=lambda x: x.get("date", ""))
         return events
@@ -173,23 +185,27 @@ class Correlator:
             for key in ("location", "city", "country", "region", "geo"):
                 val = data.get(key)
                 if val and isinstance(val, str):
-                    locations.append({
-                        "value": val,
-                        "source": module,
-                        "field": key,
-                    })
+                    locations.append(
+                        {
+                            "value": val,
+                            "source": module,
+                            "field": key,
+                        }
+                    )
 
             # GPS coordinates
             lat = data.get("latitude") or data.get("lat")
             lon = data.get("longitude") or data.get("lon") or data.get("lng")
             if lat and lon:
-                locations.append({
-                    "value": f"{lat}, {lon}",
-                    "lat": lat,
-                    "lon": lon,
-                    "source": module,
-                    "field": "coordinates",
-                })
+                locations.append(
+                    {
+                        "value": f"{lat}, {lon}",
+                        "lat": lat,
+                        "lon": lon,
+                        "source": module,
+                        "field": "coordinates",
+                    }
+                )
 
         return locations
 
@@ -208,8 +224,7 @@ class Correlator:
             for module, data in findings.items():
                 if isinstance(data, dict) and "error" not in data:
                     summary[module] = {
-                        k: v for k, v in data.items()
-                        if isinstance(v, (str, int, float, bool, list)) and k != "raw"
+                        k: v for k, v in data.items() if isinstance(v, (str, int, float, bool, list)) and k != "raw"
                     }
 
             prompt = f"""Analyze the following OSINT investigation findings and identify:
@@ -227,7 +242,10 @@ Respond in JSON with keys: connections, patterns, aliases, risks, confidence_not
             response = await client.chat.completions.create(
                 model=self.config.openai_model,
                 messages=[
-                    {"role": "system", "content": "You are an OSINT analyst. Analyze data objectively and identify connections. Always respond with valid JSON."},
+                    {
+                        "role": "system",
+                        "content": "You are an OSINT analyst. Analyze data objectively and identify connections. Always respond with valid JSON.",
+                    },
                     {"role": "user", "content": prompt},
                 ],
                 temperature=0.3,

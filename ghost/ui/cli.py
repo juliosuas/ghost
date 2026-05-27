@@ -3,6 +3,7 @@
 import asyncio
 import json
 import sys
+from pathlib import Path
 
 import click
 from rich.console import Console
@@ -17,7 +18,13 @@ from rich import box
 from ghost.core.investigator import GhostInvestigator
 from ghost.core.config import config
 from ghost.core.doctor import run_doctor_checks
-from ghost.backend.db import get_graph_data, get_investigation, list_investigations
+from ghost.backend.db import (
+    delete_investigation,
+    get_graph_data,
+    get_investigation,
+    list_investigations,
+    save_investigation,
+)
 
 console = Console()
 
@@ -39,11 +46,13 @@ DISCLAIMER = (
 
 
 def print_banner():
-    console.print(Panel(
-        Text(BANNER, style="bold green", justify="center"),
-        border_style="green",
-        padding=(0, 2),
-    ))
+    console.print(
+        Panel(
+            Text(BANNER, style="bold green", justify="center"),
+            border_style="green",
+            padding=(0, 2),
+        )
+    )
     console.print(DISCLAIMER, justify="center")
     console.print()
 
@@ -66,7 +75,9 @@ def create_progress():
 @click.option("--output", "-o", help="Output file path")
 @click.option("--format", "-f", "fmt", default="html", help="Report format: html/pdf/json")
 @click.option("--no-ai", is_flag=True, help="Disable OpenAI calls and use deterministic heuristic analysis")
-@click.option("--scope", default="authorized CLI investigation", help="Authorized scope/purpose recorded in report provenance")
+@click.option(
+    "--scope", default="authorized CLI investigation", help="Authorized scope/purpose recorded in report provenance"
+)
 @click.option("--authorized", is_flag=True, help="Acknowledge this investigation is authorized")
 @click.pass_context
 def cli(ctx, target, input_type, modules, output, fmt, no_ai, scope, authorized):
@@ -92,7 +103,9 @@ def cli(ctx, target, input_type, modules, output, fmt, no_ai, scope, authorized)
 @click.option("--output", "-o")
 @click.option("--format", "-f", "fmt", default="html")
 @click.option("--no-ai", is_flag=True, help="Disable OpenAI calls and use deterministic heuristic analysis")
-@click.option("--scope", default="authorized CLI investigation", help="Authorized scope/purpose recorded in report provenance")
+@click.option(
+    "--scope", default="authorized CLI investigation", help="Authorized scope/purpose recorded in report provenance"
+)
 @click.option("--authorized", is_flag=True, help="Acknowledge this investigation is authorized")
 def investigate(target, input_type, modules, output, fmt, no_ai, scope, authorized):
     """Run an investigation on a target."""
@@ -180,24 +193,89 @@ def show(investigation_id, as_json):
         click.echo(json.dumps(investigation, indent=2, default=str))
         return
 
-    console.print(Panel(
-        f"[bold green]ID:[/bold green] {investigation['id']}\n"
-        f"[bold green]Target:[/bold green] {investigation['target']}\n"
-        f"[bold green]Type:[/bold green] {investigation['input_type']}\n"
-        f"[bold green]Status:[/bold green] {investigation['status']}\n"
-        f"[bold green]Risk:[/bold green] {float(investigation.get('risk_score') or 0):.0%}\n"
-        f"[bold green]Authorized:[/bold green] {'yes' if investigation.get('authorized_use') else 'no'}\n"
-        f"[bold green]Scope:[/bold green] {investigation.get('scope', '')}",
-        title="[bold green]CASE FILE[/bold green]",
-        border_style="green",
-    ))
+    console.print(
+        Panel(
+            f"[bold green]ID:[/bold green] {investigation['id']}\n"
+            f"[bold green]Target:[/bold green] {investigation['target']}\n"
+            f"[bold green]Type:[/bold green] {investigation['input_type']}\n"
+            f"[bold green]Status:[/bold green] {investigation['status']}\n"
+            f"[bold green]Risk:[/bold green] {float(investigation.get('risk_score') or 0):.0%}\n"
+            f"[bold green]Authorized:[/bold green] {'yes' if investigation.get('authorized_use') else 'no'}\n"
+            f"[bold green]Scope:[/bold green] {investigation.get('scope', '')}",
+            title="[bold green]CASE FILE[/bold green]",
+            border_style="green",
+        )
+    )
 
     if investigation.get("summary"):
         console.print(Panel(investigation["summary"], title="Summary", border_style="green"))
 
     graph = get_graph_data(investigation["id"]) or {"nodes": [], "links": []}
-    console.print(f"[dim]Findings modules:[/dim] {', '.join(sorted(investigation.get('findings', {}).keys())) or 'none'}")
+    console.print(
+        f"[dim]Findings modules:[/dim] {', '.join(sorted(investigation.get('findings', {}).keys())) or 'none'}"
+    )
     console.print(f"[dim]Graph:[/dim] {len(graph['nodes'])} nodes, {len(graph['links'])} links")
+
+
+@cli.command(name="export")
+@click.argument("investigation_id")
+@click.option("--output", "-o", type=click.Path(dir_okay=False, path_type=Path), help="Destination JSON file")
+def export_case(investigation_id, output):
+    """Export one saved investigation as a portable JSON case file."""
+    investigation = _find_investigation_by_id_or_prefix(investigation_id)
+    if investigation is None:
+        raise click.ClickException(f"No investigation found for '{investigation_id}'")
+    if investigation == "ambiguous":
+        raise click.ClickException(f"Investigation prefix '{investigation_id}' is ambiguous")
+
+    output = output or Path(f"ghost-case-{investigation['id']}.json")
+    output.parent.mkdir(parents=True, exist_ok=True)
+    output.write_text(json.dumps(investigation, indent=2, default=str), encoding="utf-8")
+    console.print(f"[green]Exported case[/green] {investigation['id']} [dim]to[/dim] {output}")
+
+
+@cli.command(name="import")
+@click.argument("case_file", type=click.Path(exists=True, dir_okay=False, path_type=Path))
+@click.option("--replace", is_flag=True, help="Replace an existing case with the same investigation ID")
+def import_case(case_file, replace):
+    """Import a portable JSON case file into the local SQLite store."""
+    try:
+        case_data = json.loads(case_file.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        raise click.ClickException(f"Invalid JSON case file: {exc}") from exc
+
+    required = {"id", "target", "input_type", "status", "started_at"}
+    missing = sorted(required - set(case_data))
+    if missing:
+        raise click.ClickException(f"Invalid Ghost case file; missing: {', '.join(missing)}")
+
+    existing = get_investigation(case_data["id"])
+    if existing and not replace:
+        raise click.ClickException(f"Case {case_data['id']} already exists. Re-run with --replace to overwrite it.")
+
+    save_investigation(case_data)
+    console.print(f"[green]Imported case[/green] {case_data['id']} [dim]from[/dim] {case_file}")
+
+
+@cli.command(name="delete")
+@click.argument("investigation_id")
+@click.option("--yes", is_flag=True, help="Skip confirmation prompt")
+def delete_case(investigation_id, yes):
+    """Delete one saved investigation case file."""
+    investigation = _find_investigation_by_id_or_prefix(investigation_id)
+    if investigation is None:
+        raise click.ClickException(f"No investigation found for '{investigation_id}'")
+    if investigation == "ambiguous":
+        raise click.ClickException(f"Investigation prefix '{investigation_id}' is ambiguous")
+
+    if not yes and not Confirm.ask(f"Delete case {investigation['id']} for {investigation['target']}?", default=False):
+        console.print("[dim]Delete cancelled.[/dim]")
+        return
+
+    if delete_investigation(investigation["id"]):
+        console.print(f"[green]Deleted case[/green] {investigation['id']}")
+    else:
+        raise click.ClickException(f"Could not delete case {investigation['id']}")
 
 
 def _find_investigation_by_id_or_prefix(investigation_id: str):
@@ -205,10 +283,7 @@ def _find_investigation_by_id_or_prefix(investigation_id: str):
     if investigation:
         return investigation
 
-    matches = [
-        item for item in list_investigations(limit=500)
-        if item.get("id", "").startswith(investigation_id)
-    ]
+    matches = [item for item in list_investigations(limit=500) if item.get("id", "").startswith(investigation_id)]
     if len(matches) == 1:
         return get_investigation(matches[0]["id"])
     if len(matches) > 1:
@@ -220,11 +295,13 @@ def interactive_menu():
     """Interactive menu for investigations."""
     while True:
         console.print()
-        console.print(Panel(
-            "[bold green]INVESTIGATION MENU[/bold green]",
-            border_style="green",
-            padding=(0, 2),
-        ))
+        console.print(
+            Panel(
+                "[bold green]INVESTIGATION MENU[/bold green]",
+                border_style="green",
+                padding=(0, 2),
+            )
+        )
 
         table = Table(show_header=False, box=box.SIMPLE, border_style="green")
         table.add_column(style="bold green", width=6)
@@ -292,16 +369,18 @@ def run_investigation(
         investigator = GhostInvestigator()
 
         console.print()
-        console.print(Panel(
-            f"[bold green]TARGET:[/bold green] {target}\n"
-            f"[bold green]TYPE:[/bold green] {input_type}\n"
-            f"[bold green]MODULES:[/bold green] {', '.join(modules) if modules else 'auto'}\n"
-            f"[bold green]AI:[/bold green] {'disabled' if no_ai else 'enabled when configured'}\n"
-            f"[bold green]SCOPE:[/bold green] {scope}\n"
-            f"[bold green]AUTHORIZED:[/bold green] {'yes' if authorized else 'not acknowledged'}",
-            title="[bold green]INVESTIGATION STARTING[/bold green]",
-            border_style="green",
-        ))
+        console.print(
+            Panel(
+                f"[bold green]TARGET:[/bold green] {target}\n"
+                f"[bold green]TYPE:[/bold green] {input_type}\n"
+                f"[bold green]MODULES:[/bold green] {', '.join(modules) if modules else 'auto'}\n"
+                f"[bold green]AI:[/bold green] {'disabled' if no_ai else 'enabled when configured'}\n"
+                f"[bold green]SCOPE:[/bold green] {scope}\n"
+                f"[bold green]AUTHORIZED:[/bold green] {'yes' if authorized else 'not acknowledged'}",
+                title="[bold green]INVESTIGATION STARTING[/bold green]",
+                border_style="green",
+            )
+        )
         console.print()
 
         # Progress tracking
@@ -316,9 +395,7 @@ def run_investigation(
                     return
 
                 if module not in module_tasks:
-                    module_tasks[module] = progress.add_task(
-                        f"  {module}", total=100, status=status
-                    )
+                    module_tasks[module] = progress.add_task(f"  {module}", total=100, status=status)
 
                 if status == "done":
                     progress.update(module_tasks[module], completed=100, status=detail)
@@ -330,7 +407,11 @@ def run_investigation(
                 # Update main progress
                 done_count = sum(1 for m in module_tasks.values() if progress.tasks[m].completed >= 100)
                 total_modules = max(len(module_tasks), 1)
-                progress.update(main_task, completed=int(done_count / total_modules * 90), status=f"{done_count}/{total_modules} modules")
+                progress.update(
+                    main_task,
+                    completed=int(done_count / total_modules * 90),
+                    status=f"{done_count}/{total_modules} modules",
+                )
 
             investigator.set_progress_callback(progress_callback)
 
@@ -347,10 +428,12 @@ def run_investigation(
         # Generate report
         report_path = investigator.generate_report(investigation, fmt, output)
         console.print()
-        console.print(Panel(
-            f"[bold green]Report saved to:[/bold green] {report_path}",
-            border_style="green",
-        ))
+        console.print(
+            Panel(
+                f"[bold green]Report saved to:[/bold green] {report_path}",
+                border_style="green",
+            )
+        )
     finally:
         if no_ai:
             config.openai_api_key = original_openai_key
@@ -362,19 +445,23 @@ def display_results(investigation):
 
     # Summary
     if inv.get("summary"):
-        console.print(Panel(
-            inv["summary"],
-            title="[bold green]EXECUTIVE SUMMARY[/bold green]",
-            border_style="green",
-        ))
+        console.print(
+            Panel(
+                inv["summary"],
+                title="[bold green]EXECUTIVE SUMMARY[/bold green]",
+                border_style="green",
+            )
+        )
 
     # Risk Score
     risk = inv.get("risk_score", 0)
     risk_color = "green" if risk < 0.4 else "yellow" if risk < 0.7 else "red"
-    console.print(Panel(
-        f"[bold {risk_color}]Risk Score: {risk:.0%}[/bold {risk_color}]",
-        border_style=risk_color,
-    ))
+    console.print(
+        Panel(
+            f"[bold {risk_color}]Risk Score: {risk:.0%}[/bold {risk_color}]",
+            border_style=risk_color,
+        )
+    )
 
     # Findings tree
     tree = Tree("[bold green]Investigation Findings[/bold green]")

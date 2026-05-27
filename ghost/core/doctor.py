@@ -33,11 +33,13 @@ def run_doctor_checks(config_override: Config | None = None) -> list[DoctorCheck
     except Exception as exc:
         checks.append(DoctorCheck("database", False, str(exc), "error"))
 
-    checks.append(DoctorCheck(
-        "OpenAI key",
-        cfg.has_api_key("openai_api_key"),
-        "set" if cfg.has_api_key("openai_api_key") else "missing; fallback summaries still work",
-    ))
+    checks.append(
+        DoctorCheck(
+            "OpenAI key",
+            cfg.has_api_key("openai_api_key"),
+            "set" if cfg.has_api_key("openai_api_key") else "missing; fallback summaries still work",
+        )
+    )
 
     for package, label in [
         ("aiohttp", "HTTP collection"),

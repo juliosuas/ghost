@@ -13,6 +13,7 @@ What changed:
 - Investigations now store scope and authorized-use metadata so a case file can show why/under what authority it was created.
 - Reports include provenance: generated timestamp, target metadata, modules run, source URLs, source URL count, module errors, and global errors.
 - The CLI exposes saved case files with `ghost list` and `ghost show <id-or-prefix>` so persisted investigations are visible outside the web/API layer.
+- Case files can now be exported, imported, and deleted from the CLI with `ghost export`, `ghost import`, and `ghost delete`.
 
 Current position:
 
@@ -23,7 +24,7 @@ PostgreSQL is still the right roadmap direction for multi-user/team deployments,
 Near-term storage roadmap:
 
 1. Keep hardening SQLite case-file workflows.
-2. Add export/import for portable investigations.
+2. Add signed report bundles and retention policies for teams.
 3. Add a storage adapter interface.
 4. Add Postgres support once the API/dashboard needs multi-user concurrency.
 

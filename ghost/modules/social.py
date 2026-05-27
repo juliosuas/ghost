@@ -29,9 +29,7 @@ class SocialModule:
         )
 
         platforms = {}
-        names = [
-            "instagram", "twitter", "reddit", "tiktok", "github", "linkedin"
-        ]
+        names = ["instagram", "twitter", "reddit", "tiktok", "github", "linkedin"]
         for name, result in zip(names, results):
             if isinstance(result, Exception):
                 platforms[name] = {"error": str(result)}
@@ -42,18 +40,20 @@ class SocialModule:
         profiles = []
         for name, data in platforms.items():
             if isinstance(data, dict) and data.get("found"):
-                profiles.append({
-                    "platform": name,
-                    "username": data.get("username", username),
-                    "url": data.get("url", ""),
-                    "display_name": data.get("display_name", ""),
-                    "bio": data.get("bio", ""),
-                    "followers": data.get("followers"),
-                    "following": data.get("following"),
-                    "posts": data.get("posts"),
-                    "verified": data.get("verified", False),
-                    "created_at": data.get("created_at"),
-                })
+                profiles.append(
+                    {
+                        "platform": name,
+                        "username": data.get("username", username),
+                        "url": data.get("url", ""),
+                        "display_name": data.get("display_name", ""),
+                        "bio": data.get("bio", ""),
+                        "followers": data.get("followers"),
+                        "following": data.get("following"),
+                        "posts": data.get("posts"),
+                        "verified": data.get("verified", False),
+                        "created_at": data.get("created_at"),
+                    }
+                )
 
         return {
             "username": username,

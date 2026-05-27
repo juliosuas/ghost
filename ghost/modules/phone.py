@@ -108,13 +108,15 @@ class PhoneModule:
                         if resp.status == 200:
                             data = await resp.json()
                             if data.get("valid"):
-                                reports.append({
-                                    "source": "numverify",
-                                    "valid": data.get("valid"),
-                                    "line_type": data.get("line_type"),
-                                    "carrier": data.get("carrier"),
-                                    "location": data.get("location"),
-                                })
+                                reports.append(
+                                    {
+                                        "source": "numverify",
+                                        "valid": data.get("valid"),
+                                        "line_type": data.get("line_type"),
+                                        "carrier": data.get("carrier"),
+                                        "location": data.get("location"),
+                                    }
+                                )
                 except Exception:
                     pass
 
@@ -145,11 +147,13 @@ class PhoneModule:
                     headers = {"User-Agent": self.config.user_agent}
                     async with session.head(url, headers=headers, allow_redirects=True) as resp:
                         if resp.status == 200:
-                            linked_accounts.append({
-                                "service": service,
-                                "url": url,
-                                "status": "possibly_linked",
-                            })
+                            linked_accounts.append(
+                                {
+                                    "service": service,
+                                    "url": url,
+                                    "status": "possibly_linked",
+                                }
+                            )
                 except Exception:
                     pass
 

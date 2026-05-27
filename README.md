@@ -7,10 +7,11 @@
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-3776AB.svg?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg?style=for-the-badge)](LICENSE)
 [![Platform](https://img.shields.io/badge/platform-linux%20%7C%20macos%20%7C%20windows-lightgrey.svg?style=for-the-badge)](#installation)
+[![CI](https://img.shields.io/github/actions/workflow/status/juliosuas/ghost/ci.yml?branch=main&style=for-the-badge&logo=githubactions&label=CI)](https://github.com/juliosuas/ghost/actions/workflows/ci.yml)
 [![GitHub Stars](https://img.shields.io/github/stars/juliosuas/ghost?style=for-the-badge&logo=github)](https://github.com/juliosuas/ghost/stargazers)
 [![GitHub Issues](https://img.shields.io/github/issues/juliosuas/ghost?style=for-the-badge)](https://github.com/juliosuas/ghost/issues)
 
-**Multi-vector intelligence gathering with 500+ platform checks, AI-driven analysis, and professional reports.**
+**Multi-vector intelligence gathering with durable case files, AI-assisted analysis, and professional reports.**
 
 [Quick Start](#-quick-start) · [Features](#-features) · [Installation](#-installation) · [Demo](docs/self-audit-demo.md) · [Roadmap](#-roadmap) · [Contributing](#-contributing)
 
@@ -25,7 +26,8 @@
 | Capability | Ghost | Maltego | SpiderFoot | Recon-ng |
 |---|:---:|:---:|:---:|:---:|
 | **AI-Powered Correlation** | ✅ | ❌ | ❌ | ❌ |
-| **500+ Platform Checks** | ✅ | ✅¹ | ✅ | ~100 |
+| **75+ Built-in Username Checks** | ✅ | ✅¹ | ✅ | ~100 |
+| **SQLite Case Files & Provenance** | ✅ | ❌ | ✅ | ❌ |
 | **Professional HTML/PDF Reports** | ✅ | ✅ | ✅ | ❌ |
 | **Web Dashboard with Graphs** | ✅ | ✅ | ✅ | ❌ |
 | **Image/Face Analysis** | ✅ | ❌ | ❌ | ❌ |
@@ -39,14 +41,12 @@
 
 ## 📸 Screenshots
 
-> **Coming soon** — Screenshots of the CLI, web dashboard, entity graph, and report output.
-
-<!-- 
 <div align="center">
-  <img src="docs/screenshots/cli.png" width="45%" alt="Ghost CLI">
-  <img src="docs/screenshots/dashboard.png" width="45%" alt="Web Dashboard">
+  <img src="docs/screenshots/doctor.svg" width="48%" alt="Ghost doctor command">
+  <img src="docs/screenshots/case-list.svg" width="48%" alt="Ghost saved case list">
+  <br>
+  <img src="docs/screenshots/case-show.svg" width="96%" alt="Ghost case detail command">
 </div>
--->
 
 ## ✨ Features
 
@@ -54,7 +54,7 @@
 
 | Module | Description | Status |
 |---|---|:---:|
-| 🔤 **Username Enumeration** | Check 500+ platforms (social, forums, dating, adult) | ✅ |
+| 🔤 **Username Enumeration** | Check 75+ built-in platforms; optional Sherlock expands coverage | ✅ |
 | 📧 **Email Intelligence** | Breach checks, account discovery, WHOIS, validation | ✅ |
 | 📱 **Phone OSINT** | Carrier lookup, location, social media association | ✅ |
 | 🌐 **Domain Recon** | WHOIS, DNS, subdomains, tech stack, SSL, Wayback | ✅ |
@@ -111,7 +111,7 @@ python -m ghost.ui.cli
 # Investigate an email address
 python -m ghost.ui.cli --target "john.doe@example.com" --type email
 
-# Username hunt across 500+ platforms
+# Username hunt across built-in platforms
 python -m ghost.ui.cli --target "johndoe" --type username
 
 # Phone number lookup
@@ -131,6 +131,13 @@ ghost list
 
 # Show one saved case by full ID or unique prefix
 ghost show 5f3a9c2e
+
+# Export/import portable case files for handoff or backup
+ghost export 5f3a9c2e --output cases/johndoe.json
+ghost import cases/johndoe.json --replace
+
+# Delete a local case file when retention is no longer needed
+ghost delete 5f3a9c2e --yes
 ```
 
 For a safe public walkthrough, use the [authorized self-audit demo](docs/self-audit-demo.md).
@@ -172,8 +179,8 @@ write data to the wrong place.
 from ghost.core.investigator import GhostInvestigator
 
 investigator = GhostInvestigator()
-report = investigator.investigate("johndoe", input_type="username")
-report.export("report.html", format="html")
+investigation = investigator.investigate("johndoe", input_type="username")
+report_path = investigator.generate_report(investigation, format="html", output_path="report.html")
 ```
 
 ### REST API
@@ -222,6 +229,8 @@ Contributions are welcome! Here's how to get started:
 3. **Commit** your changes: `git commit -m "Add amazing module"`
 4. **Push** to the branch: `git push origin feature/amazing-module`
 5. **Open** a Pull Request
+
+CI runs Ruff and pytest on Python 3.10, 3.11, and 3.12. PRs should include proof plus screenshots or terminal output when user-facing behavior changes.
 
 ### Areas We Need Help
 

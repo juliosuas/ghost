@@ -123,11 +123,13 @@ class UsernameModule:
                             allow_redirects=allow_redirects,
                         ) as resp:
                             if resp.status == expected_status:
-                                found.append({
-                                    "platform": name,
-                                    "url": url,
-                                    "status": resp.status,
-                                })
+                                found.append(
+                                    {
+                                        "platform": name,
+                                        "url": url,
+                                        "status": resp.status,
+                                    }
+                                )
                             else:
                                 not_found.append(name)
                     except asyncio.TimeoutError:
@@ -135,10 +137,7 @@ class UsernameModule:
                     except Exception as e:
                         errors.append({"platform": name, "error": str(e)})
 
-            tasks = [
-                check_platform(name, url_tpl, status, redirects)
-                for name, url_tpl, status, redirects in PLATFORMS
-            ]
+            tasks = [check_platform(name, url_tpl, status, redirects) for name, url_tpl, status, redirects in PLATFORMS]
             await asyncio.gather(*tasks)
 
         # Also try sherlock/maigret if available
@@ -158,7 +157,11 @@ class UsernameModule:
         """Attempt to run sherlock for additional coverage."""
         try:
             proc = await asyncio.create_subprocess_exec(
-                "sherlock", username, "--print-found", "--timeout", "15",
+                "sherlock",
+                username,
+                "--print-found",
+                "--timeout",
+                "15",
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
             )

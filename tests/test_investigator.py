@@ -11,10 +11,18 @@ from ghost.core.investigator import (
     _detect_input_type,
     INPUT_TYPE_MODULES,
 )
-from ghost.backend.db import init_db, save_investigation, get_investigation, list_investigations, get_graph_data, delete_investigation
+from ghost.backend.db import (
+    init_db,
+    save_investigation,
+    get_investigation,
+    list_investigations,
+    get_graph_data,
+    delete_investigation,
+)
 
 
 # ── Input detection ─────────────────────────────────────────────────
+
 
 class TestInputDetection:
     def test_email(self):
@@ -40,6 +48,7 @@ class TestInputDetection:
 
 
 # ── Investigation model ─────────────────────────────────────────────
+
 
 class TestInvestigationModel:
     def test_create(self):
@@ -71,6 +80,7 @@ class TestInvestigationModel:
 
 # ── Module routing ──────────────────────────────────────────────────
 
+
 class TestModuleRouting:
     def test_username_modules(self):
         assert "username" in INPUT_TYPE_MODULES["username"]
@@ -89,6 +99,7 @@ class TestModuleRouting:
 
 
 # ── Database layer ──────────────────────────────────────────────────
+
 
 @pytest.fixture(autouse=True)
 def _setup_test_db(tmp_path, monkeypatch):
@@ -179,12 +190,8 @@ class TestDatabase:
             }
         }
         inv.correlations = {
-            "identities": [
-                {"type": "email", "value": "test@example.com", "confidence": 0.9}
-            ],
-            "locations": [
-                {"value": "New York", "source": "email"}
-            ],
+            "identities": [{"type": "email", "value": "test@example.com", "confidence": 0.9}],
+            "locations": [{"value": "New York", "source": "email"}],
         }
         save_investigation(inv.to_dict())
 
@@ -195,6 +202,7 @@ class TestDatabase:
 
 
 # ── Database configuration ──────────────────────────────────────────
+
 
 class TestDatabaseConfiguration:
     def test_sqlite_database_url_resolves_absolute_path(self, tmp_path):
@@ -229,6 +237,7 @@ class TestDatabaseConfiguration:
 
 # ── Report provenance ───────────────────────────────────────────────
 
+
 class TestReportProvenance:
     def test_json_report_includes_provenance(self, tmp_path):
         from ghost.core.report_generator import ReportGenerator
@@ -258,6 +267,7 @@ class TestReportProvenance:
 
 
 # ── API safety gates ────────────────────────────────────────────────
+
 
 class TestApiSafetyGates:
     def test_api_requires_authorized_use_acknowledgement(self):
@@ -292,6 +302,7 @@ class TestApiSafetyGates:
 
 # ── CLI saved case commands ────────────────────────────────────────
 
+
 class TestCliCaseCommands:
     def test_cli_list_outputs_saved_case(self):
         from click.testing import CliRunner
@@ -324,8 +335,71 @@ class TestCliCaseCommands:
         assert data["id"] == inv.id
         assert data["summary"] == "Found public profiles."
 
+    def test_cli_export_writes_portable_case_file(self, tmp_path):
+        from click.testing import CliRunner
+        from ghost.ui.cli import cli
+
+        inv = Investigation("exportme", "username", scope="client-owned audit", authorized_use=True)
+        inv.summary = "Portable case."
+        save_investigation(inv.to_dict())
+        output = tmp_path / "case.json"
+
+        result = CliRunner().invoke(cli, ["export", inv.id[:8], "--output", str(output)])
+
+        assert result.exit_code == 0
+        data = json.loads(output.read_text())
+        assert data["id"] == inv.id
+        assert data["target"] == "exportme"
+        assert data["scope"] == "client-owned audit"
+
+    def test_cli_import_rejects_existing_case_without_replace(self, tmp_path):
+        from click.testing import CliRunner
+        from ghost.ui.cli import cli
+
+        inv = Investigation("importme", "username")
+        case_file = tmp_path / "case.json"
+        case_file.write_text(json.dumps(inv.to_dict()), encoding="utf-8")
+
+        save_investigation(inv.to_dict())
+        result = CliRunner().invoke(cli, ["import", str(case_file)])
+
+        assert result.exit_code != 0
+        assert "already exists" in result.output
+
+    def test_cli_import_with_replace_updates_case(self, tmp_path):
+        from click.testing import CliRunner
+        from ghost.ui.cli import cli
+
+        inv = Investigation("old-target", "username")
+        save_investigation(inv.to_dict())
+        exported = inv.to_dict()
+        exported["target"] = "new-target"
+        exported["summary"] = "Replaced case."
+        case_file = tmp_path / "case.json"
+        case_file.write_text(json.dumps(exported), encoding="utf-8")
+
+        result = CliRunner().invoke(cli, ["import", str(case_file), "--replace"])
+
+        assert result.exit_code == 0
+        loaded = get_investigation(inv.id)
+        assert loaded["target"] == "new-target"
+        assert loaded["summary"] == "Replaced case."
+
+    def test_cli_delete_removes_case_with_yes(self):
+        from click.testing import CliRunner
+        from ghost.ui.cli import cli
+
+        inv = Investigation("deleteme", "username")
+        save_investigation(inv.to_dict())
+
+        result = CliRunner().invoke(cli, ["delete", inv.id[:8], "--yes"])
+
+        assert result.exit_code == 0
+        assert get_investigation(inv.id) is None
+
 
 # ── GhostInvestigator (mocked modules) ─────────────────────────────
+
 
 class TestGhostInvestigator:
     @patch("ghost.core.investigator.UsernameModule")
@@ -340,17 +414,28 @@ class TestGhostInvestigator:
     @patch("ghost.core.investigator.AIAnalyzer")
     @patch("ghost.core.investigator.Summarizer")
     def test_investigate_username(
-        self, MockSummarizer, MockAnalyzer, MockCorrelator,
-        MockGeo, MockDarkweb, MockImage, MockDomain,
-        MockSocial, MockPhone, MockEmail, MockUsername,
+        self,
+        MockSummarizer,
+        MockAnalyzer,
+        MockCorrelator,
+        MockGeo,
+        MockDarkweb,
+        MockImage,
+        MockDomain,
+        MockSocial,
+        MockPhone,
+        MockEmail,
+        MockUsername,
     ):
         # Set up mocks
         mock_username = MagicMock()
-        mock_username.run = AsyncMock(return_value={
-            "username": "johndoe",
-            "profiles": [{"platform": "GitHub", "url": "https://github.com/johndoe", "status": "found"}],
-            "found_count": 1,
-        })
+        mock_username.run = AsyncMock(
+            return_value={
+                "username": "johndoe",
+                "profiles": [{"platform": "GitHub", "url": "https://github.com/johndoe", "status": "found"}],
+                "found_count": 1,
+            }
+        )
         MockUsername.return_value = mock_username
 
         mock_social = MagicMock()
@@ -368,16 +453,23 @@ class TestGhostInvestigator:
             Mock.return_value = m
 
         mock_correlator = MagicMock()
-        mock_correlator.correlate = AsyncMock(return_value={
-            "identities": [], "connections": [], "timeline": [], "locations": [],
-        })
+        mock_correlator.correlate = AsyncMock(
+            return_value={
+                "identities": [],
+                "connections": [],
+                "timeline": [],
+                "locations": [],
+            }
+        )
         MockCorrelator.return_value = mock_correlator
 
         mock_analyzer = MagicMock()
-        mock_analyzer.analyze = AsyncMock(return_value={
-            "risk_score": 0.3,
-            "risk_assessment": {"risk_level": "low"},
-        })
+        mock_analyzer.analyze = AsyncMock(
+            return_value={
+                "risk_score": 0.3,
+                "risk_assessment": {"risk_level": "low"},
+            }
+        )
         MockAnalyzer.return_value = mock_analyzer
 
         mock_summarizer = MagicMock()
@@ -385,9 +477,7 @@ class TestGhostInvestigator:
         MockSummarizer.return_value = mock_summarizer
 
         investigator = GhostInvestigator()
-        result = asyncio.run(
-            investigator.investigate_async("johndoe", "username")
-        )
+        result = asyncio.run(investigator.investigate_async("johndoe", "username"))
 
         assert result.status == "completed"
         assert result.target == "johndoe"
