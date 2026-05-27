@@ -23,6 +23,7 @@ class Summarizer:
         """Generate AI-powered executive summary."""
         try:
             import openai
+
             client = openai.AsyncOpenAI(api_key=self.config.openai_api_key)
 
             findings_brief = {}
@@ -40,15 +41,15 @@ class Summarizer:
 
             prompt = f"""Write a concise executive summary (3-5 paragraphs) of this OSINT investigation.
 
-Target: {inv.get('target')}
-Type: {inv.get('input_type')}
-Risk Score: {inv.get('risk_score', 'N/A')}
+Target: {inv.get("target")}
+Type: {inv.get("input_type")}
+Risk Score: {inv.get("risk_score", "N/A")}
 
 Key Findings:
 {json.dumps(findings_brief, indent=2, default=str)[:5000]}
 
 AI Analysis:
-{json.dumps(inv.get('ai_analysis', {}), indent=2, default=str)[:3000]}
+{json.dumps(inv.get("ai_analysis", {}), indent=2, default=str)[:3000]}
 
 Write in a professional, objective tone suitable for a security report. Include:
 1. Overview of the investigation scope
@@ -60,7 +61,10 @@ Write in a professional, objective tone suitable for a security report. Include:
             response = await client.chat.completions.create(
                 model=self.config.openai_model,
                 messages=[
-                    {"role": "system", "content": "You are a professional intelligence analyst writing executive summaries. Be concise, factual, and objective."},
+                    {
+                        "role": "system",
+                        "content": "You are a professional intelligence analyst writing executive summaries. Be concise, factual, and objective.",
+                    },
                     {"role": "user", "content": prompt},
                 ],
                 temperature=0.3,

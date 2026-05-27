@@ -1,0 +1,44 @@
+name: Feature request
+description: Propose a focused, authorized-use improvement.
+title: "feat: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Ghost prioritizes defensible investigation workflows: authorization, provenance, case files, and repeatable reports.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What authorized workflow is blocked or painful today?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: Describe the smallest useful version.
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - CLI
+        - API
+        - Storage/case files
+        - Report provenance
+        - OSINT module
+        - Documentation/demo
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: safety
+    attributes:
+      label: Safety and privacy notes
+      description: Explain how this avoids stalking, harassment, unauthorized surveillance, or private data leakage.
+    validations:
+      required: true

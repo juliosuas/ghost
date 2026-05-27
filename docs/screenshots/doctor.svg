@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="920" height="520" viewBox="0 0 920 520" role="img" aria-labelledby="title desc">
+  <title id="title">Ghost doctor command screenshot</title>
+  <desc id="desc">Terminal screenshot showing Ghost doctor readiness checks.</desc>
+  <rect width="920" height="520" rx="8" fill="#070b0a"/>
+  <rect x="24" y="24" width="872" height="472" rx="6" fill="#0d1110" stroke="#1f3b2f"/>
+  <circle cx="52" cy="52" r="7" fill="#ff5f57"/>
+  <circle cx="76" cy="52" r="7" fill="#ffbd2e"/>
+  <circle cx="100" cy="52" r="7" fill="#28c840"/>
+  <text x="128" y="57" fill="#7ee787" font-family="monospace" font-size="16">ghost doctor</text>
+  <text x="48" y="110" fill="#00ff41" font-family="monospace" font-size="18" font-weight="700">Ghost Doctor</text>
+  <text x="48" y="150" fill="#c9d1d9" font-family="monospace" font-size="15">Check                         Status   Detail</text>
+  <line x1="48" y1="165" x2="852" y2="165" stroke="#234333"/>
+  <text x="48" y="204" fill="#c9d1d9" font-family="monospace" font-size="15">database                      OK       sqlite:///ghost/data/ghost.db</text>
+  <text x="48" y="238" fill="#c9d1d9" font-family="monospace" font-size="15">enabled modules               OK       username, email, phone, social, domain</text>
+  <text x="48" y="272" fill="#c9d1d9" font-family="monospace" font-size="15">openai key                    WARN     not configured; heuristic mode available</text>
+  <text x="48" y="306" fill="#c9d1d9" font-family="monospace" font-size="15">optional sherlock             WARN     not installed; built-in checks still work</text>
+  <text x="48" y="340" fill="#c9d1d9" font-family="monospace" font-size="15">storage permissions           OK       data directory writable</text>
+  <text x="48" y="402" fill="#8b949e" font-family="monospace" font-size="14">Use doctor before demos, deployments, and bug reports.</text>
+</svg>

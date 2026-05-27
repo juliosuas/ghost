@@ -112,8 +112,10 @@ class GeolocationModule:
             "city": best.get("city"),
             "region": best.get("region") or best.get("regionName"),
             "country": best.get("country"),
-            "latitude": best.get("latitude") or (best.get("location", ",").split(",")[0] if best.get("location") else None),
-            "longitude": best.get("longitude") or (best.get("location", ",").split(",")[1] if best.get("location") else None),
+            "latitude": best.get("latitude")
+            or (best.get("location", ",").split(",")[0] if best.get("location") else None),
+            "longitude": best.get("longitude")
+            or (best.get("location", ",").split(",")[1] if best.get("location") else None),
             "isp": best.get("isp") or best.get("org"),
         }
 

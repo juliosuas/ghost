@@ -45,6 +45,7 @@ class DomainModule:
         """Get WHOIS information."""
         try:
             import whois
+
             w = whois.whois(domain)
             return {
                 "registrar": w.registrar,
@@ -99,10 +100,34 @@ class DomainModule:
 
         # Common subdomain brute-force list
         common = [
-            "www", "mail", "ftp", "admin", "api", "dev", "staging", "test",
-            "blog", "shop", "store", "app", "portal", "secure", "vpn",
-            "remote", "webmail", "ns1", "ns2", "cdn", "media", "static",
-            "docs", "help", "support", "status", "m", "mobile",
+            "www",
+            "mail",
+            "ftp",
+            "admin",
+            "api",
+            "dev",
+            "staging",
+            "test",
+            "blog",
+            "shop",
+            "store",
+            "app",
+            "portal",
+            "secure",
+            "vpn",
+            "remote",
+            "webmail",
+            "ns1",
+            "ns2",
+            "cdn",
+            "media",
+            "static",
+            "docs",
+            "help",
+            "support",
+            "status",
+            "m",
+            "mobile",
         ]
 
         for sub in common:
@@ -137,10 +162,17 @@ class DomainModule:
                     # Analyze headers
                     resp_headers = dict(resp.headers)
                     tech["headers"] = {
-                        k: v for k, v in resp_headers.items()
-                        if k.lower() in (
-                            "server", "x-powered-by", "x-generator", "x-aspnet-version",
-                            "x-frame-options", "content-security-policy", "strict-transport-security",
+                        k: v
+                        for k, v in resp_headers.items()
+                        if k.lower()
+                        in (
+                            "server",
+                            "x-powered-by",
+                            "x-generator",
+                            "x-aspnet-version",
+                            "x-frame-options",
+                            "content-security-policy",
+                            "strict-transport-security",
                         )
                     }
 

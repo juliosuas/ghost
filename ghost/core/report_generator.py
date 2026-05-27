@@ -64,9 +64,7 @@ class ReportGenerator:
     def _generate_json(self, inv: dict, output_path: str) -> str:
         """Generate a JSON report."""
         Path(output_path).parent.mkdir(parents=True, exist_ok=True)
-        Path(output_path).write_text(
-            json.dumps(inv, indent=2, default=str), encoding="utf-8"
-        )
+        Path(output_path).write_text(json.dumps(inv, indent=2, default=str), encoding="utf-8")
         return output_path
 
     def _generate_pdf(self, inv: dict, output_path: str) -> str:
@@ -75,6 +73,7 @@ class ReportGenerator:
         self._generate_html(inv, html_path)
         try:
             from weasyprint import HTML
+
             HTML(filename=html_path).write_pdf(output_path)
             return output_path
         except ImportError:
@@ -100,9 +99,7 @@ class ReportGenerator:
         collect_urls(findings)
 
         module_errors = {
-            module: data["error"]
-            for module, data in findings.items()
-            if isinstance(data, dict) and data.get("error")
+            module: data["error"] for module, data in findings.items() if isinstance(data, dict) and data.get("error")
         }
 
         return {

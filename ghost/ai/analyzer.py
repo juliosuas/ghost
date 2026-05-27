@@ -25,12 +25,11 @@ class AIAnalyzer:
 
         try:
             import openai
+
             client = openai.AsyncOpenAI(api_key=self.config.openai_api_key)
 
             # Prepare findings summary (truncated for token limits)
-            findings_text = json.dumps(
-                self._sanitize_findings(findings), indent=2, default=str
-            )[:10000]
+            findings_text = json.dumps(self._sanitize_findings(findings), indent=2, default=str)[:10000]
 
             correlations_text = json.dumps(correlations, indent=2, default=str)[:3000]
 
@@ -91,9 +90,9 @@ Be objective, factual, and note uncertainty where applicable. Do not make unsupp
         for module, data in findings.items():
             if isinstance(data, dict):
                 sanitized[module] = {
-                    k: v for k, v in data.items()
-                    if k not in ("raw", "encoding", "all_tags", "html")
-                    and not isinstance(v, bytes)
+                    k: v
+                    for k, v in data.items()
+                    if k not in ("raw", "encoding", "all_tags", "html") and not isinstance(v, bytes)
                 }
                 # Truncate long lists
                 for k, v in sanitized[module].items():
@@ -129,13 +128,16 @@ Be objective, factual, and note uncertainty where applicable. Do not make unsupp
                     locations.add(val)
 
         # Simple risk scoring
-        risk_score = min(1.0, (
-            (0.1 if profile_count > 5 else 0) +
-            (0.2 if profile_count > 15 else 0) +
-            (0.3 if breach_count > 0 else 0) +
-            (0.2 if breach_count > 5 else 0) +
-            0.1  # Base risk for any digital presence
-        ))
+        risk_score = min(
+            1.0,
+            (
+                (0.1 if profile_count > 5 else 0)
+                + (0.2 if profile_count > 15 else 0)
+                + (0.3 if breach_count > 0 else 0)
+                + (0.2 if breach_count > 5 else 0)
+                + 0.1  # Base risk for any digital presence
+            ),
+        )
 
         risk_level = "low" if risk_score < 0.4 else "medium" if risk_score < 0.7 else "high"
 

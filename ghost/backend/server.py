@@ -29,6 +29,7 @@ _running: dict[str, str] = {}  # id -> status message
 
 # ── Static dashboard ────────────────────────────────────────────────
 
+
 @app.route("/")
 def index():
     return send_from_directory(app.static_folder, "dashboard.html")
@@ -40,6 +41,7 @@ def ui_static(filename):
 
 
 # ── API endpoints ───────────────────────────────────────────────────
+
 
 @app.route("/api/investigate", methods=["POST"])
 def start_investigation():
@@ -67,10 +69,12 @@ def start_investigation():
         return jsonify({"error": "Provide at least one of: target, name, email, phone, username"}), 400
 
     if data.get("authorized_use") is not True:
-        return jsonify({
-            "error": "authorized_use must be true for API investigations",
-            "detail": "Only run Ghost for authorized security research, journalism, law enforcement, or self-audits.",
-        }), 400
+        return jsonify(
+            {
+                "error": "authorized_use must be true for API investigations",
+                "detail": "Only run Ghost for authorized security research, journalism, law enforcement, or self-audits.",
+            }
+        ), 400
 
     modules = data.get("modules")
     scope = data.get("scope", "authorized API investigation")
@@ -139,6 +143,7 @@ def get_entity_graph(investigation_id):
 
 
 # ── Run ─────────────────────────────────────────────────────────────
+
 
 def main():
     app.run(host=config.host, port=config.port, debug=config.debug)

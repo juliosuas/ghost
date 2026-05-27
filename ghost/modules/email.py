@@ -40,7 +40,7 @@ class EmailModule:
     async def _validate_email(self, email: str) -> dict:
         """Validate email format and check MX records."""
         # Format check
-        pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+        pattern = r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
         is_valid_format = bool(re.match(pattern, email))
 
         domain = email.split("@")[1]
@@ -49,11 +49,9 @@ class EmailModule:
         mx_records = []
         try:
             import dns.resolver
+
             answers = dns.resolver.resolve(domain, "MX")
-            mx_records = [
-                {"priority": r.preference, "host": str(r.exchange).rstrip(".")}
-                for r in answers
-            ]
+            mx_records = [{"priority": r.preference, "host": str(r.exchange).rstrip(".")} for r in answers]
         except Exception:
             pass
 
@@ -124,11 +122,13 @@ class EmailModule:
                         if resp.status == 200:
                             data = await resp.json()
                             # Each API has different response structure
-                            accounts.append({
-                                "service": name,
-                                "exists": True,
-                                "response_code": resp.status,
-                            })
+                            accounts.append(
+                                {
+                                    "service": name,
+                                    "exists": True,
+                                    "response_code": resp.status,
+                                }
+                            )
                 except Exception:
                     pass
 
@@ -142,13 +142,14 @@ class EmailModule:
                         if resp.status == 200:
                             data = await resp.json()
                             emails = data.get("data", {}).get("emails", [])
-                            accounts.append({
-                                "service": "Hunter.io",
-                                "related_emails": [
-                                    {"email": e["value"], "type": e.get("type")}
-                                    for e in emails[:10]
-                                ],
-                            })
+                            accounts.append(
+                                {
+                                    "service": "Hunter.io",
+                                    "related_emails": [
+                                        {"email": e["value"], "type": e.get("type")} for e in emails[:10]
+                                    ],
+                                }
+                            )
             except Exception:
                 pass
 
@@ -161,15 +162,18 @@ class EmailModule:
 
         try:
             import whois
+
             w = whois.whois(domain)
-            info.update({
-                "registrar": w.registrar,
-                "creation_date": str(w.creation_date) if w.creation_date else None,
-                "expiration_date": str(w.expiration_date) if w.expiration_date else None,
-                "name_servers": w.name_servers if w.name_servers else [],
-                "org": w.org,
-                "country": w.country,
-            })
+            info.update(
+                {
+                    "registrar": w.registrar,
+                    "creation_date": str(w.creation_date) if w.creation_date else None,
+                    "expiration_date": str(w.expiration_date) if w.expiration_date else None,
+                    "name_servers": w.name_servers if w.name_servers else [],
+                    "org": w.org,
+                    "country": w.country,
+                }
+            )
         except Exception as e:
             info["whois_error"] = str(e)
 
@@ -178,6 +182,7 @@ class EmailModule:
     async def _gravatar_check(self, email: str) -> dict:
         """Check for Gravatar profile."""
         import hashlib
+
         email_hash = hashlib.md5(email.strip().lower().encode()).hexdigest()
         profile_url = f"https://en.gravatar.com/{email_hash}.json"
         avatar_url = f"https://www.gravatar.com/avatar/{email_hash}"
@@ -196,8 +201,7 @@ class EmailModule:
                             "about": entry.get("aboutMe"),
                             "location": entry.get("currentLocation"),
                             "accounts": [
-                                {"service": a.get("shortname"), "url": a.get("url")}
-                                for a in entry.get("accounts", [])
+                                {"service": a.get("shortname"), "url": a.get("url")} for a in entry.get("accounts", [])
                             ],
                         }
                     return {"exists": False, "avatar_url": avatar_url + "?d=404"}
@@ -226,9 +230,17 @@ class EmailModule:
 
     def _is_disposable(self, domain: str) -> bool:
         disposable_domains = {
-            "tempmail.com", "throwaway.email", "guerrillamail.com",
-            "mailinator.com", "10minutemail.com", "trashmail.com",
-            "yopmail.com", "sharklasers.com", "guerrillamailblock.com",
-            "dispostable.com", "maildrop.cc", "temp-mail.org",
+            "tempmail.com",
+            "throwaway.email",
+            "guerrillamail.com",
+            "mailinator.com",
+            "10minutemail.com",
+            "trashmail.com",
+            "yopmail.com",
+            "sharklasers.com",
+            "guerrillamailblock.com",
+            "dispostable.com",
+            "maildrop.cc",
+            "temp-mail.org",
         }
         return domain in disposable_domains

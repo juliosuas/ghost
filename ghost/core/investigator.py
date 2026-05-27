@@ -151,9 +151,7 @@ class GhostInvestigator:
         # Phase 2: Correlate findings
         self._report_progress("correlator", "start", "Correlating findings")
         try:
-            investigation.correlations = await self.correlator.correlate(
-                investigation.findings
-            )
+            investigation.correlations = await self.correlator.correlate(investigation.findings)
         except Exception as e:
             investigation.errors.append(f"Correlation error: {e}")
 
@@ -180,9 +178,7 @@ class GhostInvestigator:
 
         return investigation
 
-    async def _run_module(
-        self, name: str, target: str, input_type: str, investigation: Investigation
-    ):
+    async def _run_module(self, name: str, target: str, input_type: str, investigation: Investigation):
         """Run a single OSINT module with error handling."""
         self._report_progress(name, "running", f"Scanning {name}")
         try:
@@ -195,8 +191,6 @@ class GhostInvestigator:
             investigation.findings[name] = {"error": str(e)}
             self._report_progress(name, "error", str(e))
 
-    def generate_report(
-        self, investigation: Investigation, format: str = "html", output_path: str = None
-    ) -> str:
+    def generate_report(self, investigation: Investigation, format: str = "html", output_path: str = None) -> str:
         """Generate a report from an investigation."""
         return self.report_generator.generate(investigation, format, output_path)

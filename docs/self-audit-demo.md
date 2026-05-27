@@ -37,7 +37,10 @@ ghost list
 # 4. Open the saved case by ID prefix
 ghost show <case-id-prefix>
 
-# 5. Inspect report provenance
+# 5. Export a portable case file for handoff or backup
+ghost export <case-id-prefix> --output demo-case.json
+
+# 6. Inspect report provenance
 cat demo-report.json | jq '.provenance'
 ```
 
@@ -49,7 +52,8 @@ Capture these for README/demo material:
 2. Investigation progress running with `--no-ai --authorized`.
 3. `ghost list` showing saved cases with scope and authorization.
 4. `ghost show <id>` case summary with modules and graph size.
-5. JSON provenance block from `demo-report.json`.
+5. `ghost export <id>` writing a portable JSON case file.
+6. JSON provenance block from `demo-report.json`.
 
 ## Talk track
 

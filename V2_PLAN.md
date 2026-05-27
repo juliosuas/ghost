@@ -119,3 +119,15 @@ Added the first case-file retrieval polish so Ghost's SQLite work is visible fro
 - `list_investigations()` now includes scope, authorized-use flag, risk, and summary so API/CLI users can audit case context without fetching every case one by one.
 
 Verified with `.venv/bin/python -m pytest -q` and `.venv/bin/python -m ruff check .`.
+
+## Batch 9 — public repo polish and portable cases
+
+Added the repo-level pieces that help Ghost look maintained and contribution-ready:
+
+- CI workflow for Python 3.10, 3.11, and 3.12 with Ruff and pytest.
+- Issue templates for bugs and feature requests that force reproduction steps and safety/privacy context.
+- Pull request template requiring proof, screenshots/terminal output for user-facing changes, and no committed private artifacts.
+- README screenshots for `ghost doctor`, `ghost list`, and `ghost show`.
+- CLI case-file portability commands: `ghost export`, `ghost import`, and `ghost delete`.
+
+This turns the SQLite response into a complete user story: run an authorized investigation, store it, retrieve it, export it for handoff/backup, import it elsewhere, and delete it when retention is no longer needed.

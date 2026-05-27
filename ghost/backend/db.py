@@ -145,9 +145,7 @@ def init_db():
             CREATE INDEX IF NOT EXISTS idx_findings_investigation ON findings(investigation_id);
             CREATE INDEX IF NOT EXISTS idx_relationships_investigation ON relationships(investigation_id);
         """)
-        existing_columns = {
-            row["name"] for row in conn.execute("PRAGMA table_info(investigations)").fetchall()
-        }
+        existing_columns = {row["name"] for row in conn.execute("PRAGMA table_info(investigations)").fetchall()}
         if "scope" not in existing_columns:
             conn.execute("ALTER TABLE investigations ADD COLUMN scope TEXT DEFAULT ''")
         if "authorized_use" not in existing_columns:
@@ -160,26 +158,30 @@ def init_db():
 
 # ── Investigation CRUD ──────────────────────────────────────────────
 
+
 def save_investigation(inv_dict: dict):
     """Save or update a full investigation from Investigation.to_dict()."""
     with get_db() as conn:
-        conn.execute("""
+        conn.execute(
+            """
             INSERT OR REPLACE INTO investigations
                 (id, target, input_type, scope, authorized_use, status, started_at, completed_at, summary, risk_score, errors)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, (
-            inv_dict["id"],
-            inv_dict["target"],
-            inv_dict["input_type"],
-            inv_dict.get("scope", ""),
-            1 if inv_dict.get("authorized_use", False) else 0,
-            inv_dict["status"],
-            inv_dict["started_at"],
-            inv_dict["completed_at"],
-            inv_dict.get("summary", ""),
-            inv_dict.get("risk_score", 0.0),
-            json.dumps(inv_dict.get("errors", [])),
-        ))
+        """,
+            (
+                inv_dict["id"],
+                inv_dict["target"],
+                inv_dict["input_type"],
+                inv_dict.get("scope", ""),
+                1 if inv_dict.get("authorized_use", False) else 0,
+                inv_dict["status"],
+                inv_dict["started_at"],
+                inv_dict["completed_at"],
+                inv_dict.get("summary", ""),
+                inv_dict.get("risk_score", 0.0),
+                json.dumps(inv_dict.get("errors", [])),
+            ),
+        )
 
         # Store each module's findings
         conn.execute("DELETE FROM findings WHERE investigation_id = ?", (inv_dict["id"],))
@@ -266,9 +268,9 @@ def _store_entities_and_relationships(conn, inv_dict):
 
     # Locations
     for loc in inv_dict.get("correlations", {}).get("locations", []):
-        _ensure_entity("location", loc.get("value", ""), metadata={
-            k: loc[k] for k in ("lat", "lon", "source") if k in loc
-        })
+        _ensure_entity(
+            "location", loc.get("value", ""), metadata={k: loc[k] for k in ("lat", "lon", "source") if k in loc}
+        )
 
 
 def get_investigation(investigation_id: str) -> dict | None:
@@ -355,24 +357,28 @@ def get_graph_data(investigation_id: str) -> dict | None:
 
         nodes = []
         for e in entities:
-            nodes.append({
-                "id": e["id"],
-                "label": e["value"][:60],
-                "type": e["entity_type"],
-                "platform": e["platform"],
-                "confidence": e["confidence"],
-            })
+            nodes.append(
+                {
+                    "id": e["id"],
+                    "label": e["value"][:60],
+                    "type": e["entity_type"],
+                    "platform": e["platform"],
+                    "confidence": e["confidence"],
+                }
+            )
 
         links = []
         entity_ids = {e["id"] for e in entities}
         for r in relationships:
             if r["source_entity_id"] in entity_ids and r["target_entity_id"] in entity_ids:
-                links.append({
-                    "source": r["source_entity_id"],
-                    "target": r["target_entity_id"],
-                    "type": r["relationship_type"],
-                    "confidence": r["confidence"],
-                })
+                links.append(
+                    {
+                        "source": r["source_entity_id"],
+                        "target": r["target_entity_id"],
+                        "type": r["relationship_type"],
+                        "confidence": r["confidence"],
+                    }
+                )
 
         return {"nodes": nodes, "links": links}
 

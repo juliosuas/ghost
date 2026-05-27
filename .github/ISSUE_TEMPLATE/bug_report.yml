@@ -1,0 +1,48 @@
+name: Bug report
+description: Report a reproducible Ghost defect.
+title: "bug: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping harden Ghost. Keep reports focused on authorized use cases and do not include private target data.
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: What should Ghost have done?
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: What happened instead?
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Reproduction steps
+      description: Include commands, flags, and a safe public or synthetic target.
+      placeholder: |
+        1. Run `ghost doctor`
+        2. Run `ghost investigate demo_user --type username --modules username --no-ai --authorized`
+        3. Observe ...
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Ghost version or commit
+      placeholder: "0.1.0 / commit SHA"
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: OS, Python version, install method, and relevant optional tools.
+    validations:
+      required: true

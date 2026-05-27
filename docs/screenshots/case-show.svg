@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="520" viewBox="0 0 1200 520" role="img" aria-labelledby="title desc">
+  <title id="title">Ghost case detail screenshot</title>
+  <desc id="desc">Terminal screenshot showing a Ghost case summary with authorization, scope, modules, and graph size.</desc>
+  <rect width="1200" height="520" rx="8" fill="#070b0a"/>
+  <rect x="24" y="24" width="1152" height="472" rx="6" fill="#0d1110" stroke="#1f3b2f"/>
+  <circle cx="52" cy="52" r="7" fill="#ff5f57"/>
+  <circle cx="76" cy="52" r="7" fill="#ffbd2e"/>
+  <circle cx="100" cy="52" r="7" fill="#28c840"/>
+  <text x="128" y="57" fill="#7ee787" font-family="monospace" font-size="16">ghost show 8f3a91c2</text>
+  <text x="48" y="110" fill="#00ff41" font-family="monospace" font-size="18" font-weight="700">CASE FILE</text>
+  <text x="48" y="150" fill="#c9d1d9" font-family="monospace" font-size="15">ID:          8f3a91c2-53f8-4e82-96df-7cc4fd940f31</text>
+  <text x="48" y="184" fill="#c9d1d9" font-family="monospace" font-size="15">Target:      juliosuas</text>
+  <text x="48" y="218" fill="#c9d1d9" font-family="monospace" font-size="15">Type:        username</text>
+  <text x="48" y="252" fill="#c9d1d9" font-family="monospace" font-size="15">Status:      completed</text>
+  <text x="48" y="286" fill="#c9d1d9" font-family="monospace" font-size="15">Risk:        10%</text>
+  <text x="48" y="320" fill="#c9d1d9" font-family="monospace" font-size="15">Authorized:  yes</text>
+  <text x="48" y="354" fill="#c9d1d9" font-family="monospace" font-size="15">Scope:       authorized self-audit demo</text>
+  <text x="48" y="416" fill="#8b949e" font-family="monospace" font-size="14">Findings modules: username</text>
+  <text x="48" y="446" fill="#8b949e" font-family="monospace" font-size="14">Graph: 4 nodes, 3 links</text>
+</svg>

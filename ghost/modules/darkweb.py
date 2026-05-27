@@ -42,6 +42,7 @@ class DarkWebModule:
                         text = await resp.text()
                         # Parse results from HTML
                         from bs4 import BeautifulSoup
+
                         soup = BeautifulSoup(text, "html.parser")
                         results = []
                         for item in soup.select("li.result"):
@@ -49,11 +50,13 @@ class DarkWebModule:
                             link_el = item.select_one("a")
                             desc_el = item.select_one("p")
                             if title_el and link_el:
-                                results.append({
-                                    "title": title_el.get_text(strip=True),
-                                    "url": link_el.get("href", ""),
-                                    "description": desc_el.get_text(strip=True) if desc_el else "",
-                                })
+                                results.append(
+                                    {
+                                        "title": title_el.get_text(strip=True),
+                                        "url": link_el.get("href", ""),
+                                        "description": desc_el.get_text(strip=True) if desc_el else "",
+                                    }
+                                )
                         return {"results": results[:20], "count": len(results)}
                     return {"results": [], "error": f"Status {resp.status}"}
         except Exception as e:
@@ -81,14 +84,16 @@ class DarkWebModule:
                         if resp.status == 200:
                             data = await resp.json()
                             for breach in data:
-                                breaches.append({
-                                    "name": breach.get("Name"),
-                                    "title": breach.get("Title"),
-                                    "date": breach.get("BreachDate"),
-                                    "pwn_count": breach.get("PwnCount"),
-                                    "data_classes": breach.get("DataClasses", []),
-                                    "verified": breach.get("IsVerified"),
-                                })
+                                breaches.append(
+                                    {
+                                        "name": breach.get("Name"),
+                                        "title": breach.get("Title"),
+                                        "date": breach.get("BreachDate"),
+                                        "pwn_count": breach.get("PwnCount"),
+                                        "data_classes": breach.get("DataClasses", []),
+                                        "verified": breach.get("IsVerified"),
+                                    }
+                                )
 
                     # Check pastes
                     if "@" in target:
@@ -124,9 +129,9 @@ class DarkWebModule:
 
         # Search public paste indices
         paste_searches = [
-            ("PasteBin (Google)", f"site:pastebin.com \"{target}\""),
-            ("GitHub Gists", f"site:gist.github.com \"{target}\""),
-            ("Ghostbin", f"site:ghostbin.com \"{target}\""),
+            ("PasteBin (Google)", f'site:pastebin.com "{target}"'),
+            ("GitHub Gists", f'site:gist.github.com "{target}"'),
+            ("Ghostbin", f'site:ghostbin.com "{target}"'),
         ]
 
         # Use Google Custom Search if available
@@ -144,12 +149,14 @@ class DarkWebModule:
                             if resp.status == 200:
                                 data = await resp.json()
                                 for item in data.get("items", [])[:5]:
-                                    pastes.append({
-                                        "source": name,
-                                        "title": item.get("title"),
-                                        "url": item.get("link"),
-                                        "snippet": item.get("snippet"),
-                                    })
+                                    pastes.append(
+                                        {
+                                            "source": name,
+                                            "title": item.get("title"),
+                                            "url": item.get("link"),
+                                            "snippet": item.get("snippet"),
+                                        }
+                                    )
                     except Exception:
                         pass
 
