@@ -1,4 +1,4 @@
-"""Username enumeration across 500+ platforms."""
+"""Username enumeration across 70+ built-in platforms."""
 
 import asyncio
 import aiohttp

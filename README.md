@@ -26,7 +26,7 @@
 | Capability | Ghost | Maltego | SpiderFoot | Recon-ng |
 |---|:---:|:---:|:---:|:---:|
 | **AI-Powered Correlation** | ✅ | ❌ | ❌ | ❌ |
-| **75+ Built-in Username Checks** | ✅ | ✅¹ | ✅ | ~100 |
+| **70+ Built-in Username Checks** | ✅ | ✅¹ | ✅ | ~100 |
 | **SQLite Case Files & Provenance** | ✅ | ❌ | ✅ | ❌ |
 | **Professional HTML/PDF Reports** | ✅ | ✅ | ✅ | ❌ |
 | **Web Dashboard with Graphs** | ✅ | ✅ | ✅ | ❌ |
@@ -54,7 +54,7 @@
 
 | Module | Description | Status |
 |---|---|:---:|
-| 🔤 **Username Enumeration** | Check 75+ built-in platforms; optional Sherlock expands coverage | ✅ |
+| 🔤 **Username Enumeration** | Check 70+ built-in platforms; optional Sherlock expands coverage | ✅ |
 | 📧 **Email Intelligence** | Breach checks, account discovery, WHOIS, validation | ✅ |
 | 📱 **Phone OSINT** | Carrier lookup, location, social media association | ✅ |
 | 🌐 **Domain Recon** | WHOIS, DNS, subdomains, tech stack, SSL, Wayback | ✅ |
