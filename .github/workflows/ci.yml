@@ -16,10 +16,10 @@ jobs:
 
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
           cache: pip
@@ -31,8 +31,8 @@ jobs:
 
       - name: Lint
         run: |
-          python -m ruff check ghost tests
-          python -m ruff format --check ghost tests
+          python -m ruff check ghost tests conftest.py
+          python -m ruff format --check ghost tests conftest.py
 
       - name: Test
         run: python -m pytest -q
