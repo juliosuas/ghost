@@ -131,3 +131,15 @@ Added the repo-level pieces that help Ghost look maintained and contribution-rea
 - CLI case-file portability commands: `ghost export`, `ghost import`, and `ghost delete`.
 
 This turns the SQLite response into a complete user story: run an authorized investigation, store it, retrieve it, export it for handoff/backup, import it elsewhere, and delete it when retention is no longer needed.
+
+## Batch 10 — machine-readable doctor output
+
+Added `ghost doctor --json` so readiness checks are no longer trapped in a Rich table. The command now emits a stable JSON summary with:
+
+- overall `ok`;
+- `error_count` and `warning_count`;
+- serialized check rows with `name`, `ok`, `detail`, and `severity`.
+
+Why this matters: cron, CI, API startup checks, and future hosted deploys can audit Ghost readiness without scraping terminal styling. The human `ghost doctor` table remains unchanged.
+
+Verified with `.venv/bin/python -m pytest -q`, `.venv/bin/ruff check .`, `.venv/bin/ruff format --check .`, and `.venv/bin/ghost doctor --json`.

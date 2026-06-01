@@ -61,3 +61,23 @@ def run_doctor_checks(config_override: Config | None = None) -> list[DoctorCheck
 def has_error(checks: list[DoctorCheck]) -> bool:
     """Whether any hard-error doctor check failed."""
     return any(not check.ok and check.severity == "error" for check in checks)
+
+
+def summarize_doctor_checks(checks: list[DoctorCheck]) -> dict:
+    """Return a machine-readable readiness summary for CLI, API, and CI use."""
+    failed_errors = [check for check in checks if not check.ok and check.severity == "error"]
+    warnings = [check for check in checks if not check.ok and check.severity != "error"]
+    return {
+        "ok": not failed_errors,
+        "error_count": len(failed_errors),
+        "warning_count": len(warnings),
+        "checks": [
+            {
+                "name": check.name,
+                "ok": check.ok,
+                "detail": check.detail,
+                "severity": check.severity,
+            }
+            for check in checks
+        ],
+    }

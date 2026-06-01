@@ -225,7 +225,7 @@ class TestDatabaseConfiguration:
             resolve_database_path("postgresql://user:pass@localhost/ghost")
 
     def test_doctor_checks_return_structured_results(self):
-        from ghost.core.doctor import has_error, run_doctor_checks
+        from ghost.core.doctor import has_error, run_doctor_checks, summarize_doctor_checks
 
         checks = run_doctor_checks()
         names = {check.name for check in checks}
@@ -233,6 +233,24 @@ class TestDatabaseConfiguration:
         assert "database" in names
         assert "enabled modules" in names
         assert has_error(checks) is False
+
+        summary = summarize_doctor_checks(checks)
+        assert summary["ok"] is True
+        assert summary["error_count"] == 0
+        assert isinstance(summary["warning_count"], int)
+        assert {check["name"] for check in summary["checks"]} == names
+
+    def test_doctor_cli_json_output(self):
+        from click.testing import CliRunner
+        from ghost.ui.cli import cli
+
+        result = CliRunner().invoke(cli, ["doctor", "--json"])
+        assert result.exit_code == 0
+        payload = json.loads(result.output)
+        assert payload["ok"] is True
+        assert payload["error_count"] == 0
+        assert "checks" in payload
+        assert "Ghost Doctor" not in result.output
 
 
 # ── Report provenance ───────────────────────────────────────────────

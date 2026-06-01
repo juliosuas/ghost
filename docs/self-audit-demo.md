@@ -20,6 +20,7 @@ The demo should highlight:
 ```bash
 # 1. Verify local setup
 ghost doctor
+ghost doctor --json
 
 # 2. Run an authorized deterministic self-audit demo
 ghost investigate juliosuas \
@@ -49,11 +50,12 @@ cat demo-report.json | jq '.provenance'
 Capture these for README/demo material:
 
 1. `ghost doctor` table.
-2. Investigation progress running with `--no-ai --authorized`.
-3. `ghost list` showing saved cases with scope and authorization.
-4. `ghost show <id>` case summary with modules and graph size.
-5. `ghost export <id>` writing a portable JSON case file.
-6. JSON provenance block from `demo-report.json`.
+2. `ghost doctor --json` readiness output.
+3. Investigation progress running with `--no-ai --authorized`.
+4. `ghost list` showing saved cases with scope and authorization.
+5. `ghost show <id>` case summary with modules and graph size.
+6. `ghost export <id>` writing a portable JSON case file.
+7. JSON provenance block from `demo-report.json`.
 
 ## Talk track
 

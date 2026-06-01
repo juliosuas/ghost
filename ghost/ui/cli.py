@@ -17,7 +17,7 @@ from rich import box
 
 from ghost.core.investigator import GhostInvestigator
 from ghost.core.config import config
-from ghost.core.doctor import run_doctor_checks
+from ghost.core.doctor import run_doctor_checks, summarize_doctor_checks
 from ghost.backend.db import (
     delete_investigation,
     get_graph_data,
@@ -122,8 +122,15 @@ def interactive():
 
 
 @cli.command()
-def doctor():
+@click.option("--json", "as_json", is_flag=True, help="Emit machine-readable readiness JSON")
+def doctor(as_json):
     """Check local Ghost configuration and optional capabilities."""
+    checks = run_doctor_checks()
+
+    if as_json:
+        click.echo(json.dumps(summarize_doctor_checks(checks), indent=2))
+        return
+
     print_banner()
 
     table = Table(title="Ghost Doctor", box=box.ROUNDED, border_style="green")
@@ -135,7 +142,7 @@ def doctor():
         status = "[green]OK[/green]" if ok else "[red]FAIL[/red]" if severity == "error" else "[yellow]WARN[/yellow]"
         table.add_row(name, status, detail)
 
-    for check in run_doctor_checks():
+    for check in checks:
         add(check.name, check.ok, check.detail, check.severity)
     console.print(table)
 
