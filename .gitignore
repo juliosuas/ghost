@@ -13,6 +13,8 @@ __pycache__/
 dist/
 build/
 *.egg
+.coverage
+htmlcov/
 
 # IDE
 .vscode/

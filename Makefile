@@ -1,28 +1,30 @@
+PYTHON ?= python
+
 .PHONY: install dev run cli dashboard test clean docker-up docker-down lint format
 
 install:
-	pip install -e .
+	$(PYTHON) -m pip install -e .
 
 dev:
-	pip install -e ".[dev,full]"
+	$(PYTHON) -m pip install -e ".[dev,full]"
 
 run: cli
 
 cli:
-	python -m ghost
+	$(PYTHON) -m ghost
 
 dashboard:
-	python -m ghost.backend.server
+	$(PYTHON) -m ghost.backend.server
 
 test:
-	pytest tests/ -v --cov=ghost
+	$(PYTHON) -m pytest tests/ -v --cov=ghost
 
 lint:
-	ruff check ghost/ tests/
-	ruff format --check ghost/ tests/
+	$(PYTHON) -m ruff check ghost/ tests/
+	$(PYTHON) -m ruff format --check ghost/ tests/
 
 format:
-	ruff format ghost/ tests/
+	$(PYTHON) -m ruff format ghost/ tests/
 
 docker-up:
 	docker-compose up -d --build
