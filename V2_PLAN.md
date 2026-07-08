@@ -143,3 +143,11 @@ Added `ghost doctor --json` so readiness checks are no longer trapped in a Rich 
 Why this matters: cron, CI, API startup checks, and future hosted deploys can audit Ghost readiness without scraping terminal styling. The human `ghost doctor` table remains unchanged.
 
 Verified with `.venv/bin/python -m pytest -q`, `.venv/bin/ruff check .`, `.venv/bin/ruff format --check .`, and `.venv/bin/ghost doctor --json`.
+
+## Batch 11 — storage adapter boundary
+
+Documented the storage adapter contract in `docs/storage-adapter-boundary.md` so the PostgreSQL roadmap has a clear engineering gate instead of becoming a vague claim.
+
+This keeps Ghost honest: SQLite is supported today, unsupported `DATABASE_URL` schemes fail loudly today, and Postgres remains pending until the shared storage interface, contract tests, migrations, and CI coverage exist.
+
+Verified with `.venv/bin/python -m pytest -q`, `.venv/bin/ruff check .`, `.venv/bin/ruff format --check .`, and `.venv/bin/ghost doctor --json`.
