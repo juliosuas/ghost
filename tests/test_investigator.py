@@ -252,6 +252,22 @@ class TestDatabaseConfiguration:
         assert "checks" in payload
         assert "Ghost Doctor" not in result.output
 
+    def test_doctor_reports_unsupported_database_override(self):
+        from ghost.core.config import Config
+        from ghost.core.doctor import has_error, run_doctor_checks, summarize_doctor_checks
+
+        cfg = Config()
+        cfg.database_url = "postgresql://user:pass@localhost/ghost"
+
+        checks = run_doctor_checks(cfg)
+        database_check = next(check for check in checks if check.name == "database")
+
+        assert database_check.ok is False
+        assert database_check.severity == "error"
+        assert "Unsupported DATABASE_URL scheme 'postgresql'" in database_check.detail
+        assert has_error(checks) is True
+        assert summarize_doctor_checks(checks)["ok"] is False
+
 
 # ── Report provenance ───────────────────────────────────────────────
 

@@ -56,10 +56,11 @@ def resolve_database_path(database_url: str) -> Path:
 DB_PATH = resolve_database_path(config.database_url)
 
 
-def get_connection() -> sqlite3.Connection:
-    if str(DB_PATH) != ":memory:":
-        DB_PATH.parent.mkdir(parents=True, exist_ok=True)
-    conn = sqlite3.connect(str(DB_PATH), timeout=30)
+def get_connection(database_path: Path | None = None) -> sqlite3.Connection:
+    path = database_path or DB_PATH
+    if str(path) != ":memory:":
+        path.parent.mkdir(parents=True, exist_ok=True)
+    conn = sqlite3.connect(str(path), timeout=30)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA journal_mode=WAL")
     conn.execute("PRAGMA foreign_keys=ON")
@@ -68,8 +69,8 @@ def get_connection() -> sqlite3.Connection:
 
 
 @contextmanager
-def get_db():
-    conn = get_connection()
+def get_db(database_path: Path | None = None):
+    conn = get_connection(database_path)
     try:
         yield conn
         conn.commit()
@@ -80,9 +81,9 @@ def get_db():
         conn.close()
 
 
-def init_db():
+def init_db(database_path: Path | None = None):
     """Create all tables if they don't exist."""
-    with get_db() as conn:
+    with get_db(database_path) as conn:
         conn.executescript("""
             CREATE TABLE IF NOT EXISTS investigations (
                 id TEXT PRIMARY KEY,

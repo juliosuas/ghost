@@ -170,6 +170,9 @@ PostgreSQL is on the roadmap behind the storage adapter boundary. For now,
 non-SQLite `DATABASE_URL` values fail explicitly so deployments do not silently
 write data to the wrong place.
 
+See the [storage adapter boundary](docs/storage-adapter-boundary.md) for the
+contract Ghost must satisfy before advertising non-SQLite backends.
+
 > **Note:** Ghost works with just an OpenAI key. Additional keys unlock more modules.
 
 ## 📖 Usage

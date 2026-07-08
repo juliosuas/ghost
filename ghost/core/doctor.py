@@ -6,7 +6,7 @@ import importlib.util
 import shutil
 from dataclasses import dataclass
 
-from ghost.backend.db import DB_PATH, get_connection, init_db
+from ghost.backend.db import DB_PATH, get_connection, init_db, resolve_database_path
 from ghost.core.config import Config, config
 
 
@@ -26,10 +26,11 @@ def run_doctor_checks(config_override: Config | None = None) -> list[DoctorCheck
     checks: list[DoctorCheck] = []
 
     try:
-        init_db()
-        with get_connection() as conn:
+        database_path = resolve_database_path(cfg.database_url) if config_override else DB_PATH
+        init_db(database_path)
+        with get_connection(database_path) as conn:
             conn.execute("SELECT 1").fetchone()
-        checks.append(DoctorCheck("database", True, str(DB_PATH), "error"))
+        checks.append(DoctorCheck("database", True, str(database_path), "error"))
     except Exception as exc:
         checks.append(DoctorCheck("database", False, str(exc), "error"))
 

@@ -18,7 +18,7 @@ What changed:
 
 Current local verification:
 
-- `pytest -q`: 56 passed.
+- `pytest -q`: 57 passed.
 - `ruff check .`: passed.
 - `ruff format --check .`: passed.
 - `ghost doctor --json`: ok, 0 errors, 0 warnings.
