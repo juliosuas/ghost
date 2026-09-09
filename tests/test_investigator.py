@@ -252,6 +252,38 @@ class TestDatabaseConfiguration:
         assert "checks" in payload
         assert "Ghost Doctor" not in result.output
 
+    def test_doctor_cli_json_exits_nonzero_on_hard_error(self, monkeypatch):
+        from click.testing import CliRunner
+        from ghost.core.doctor import DoctorCheck
+        from ghost.ui import cli as cli_module
+
+        monkeypatch.setattr(
+            cli_module,
+            "run_doctor_checks",
+            lambda: [DoctorCheck("database", False, "unavailable", "error")],
+        )
+
+        result = CliRunner().invoke(cli_module.cli, ["doctor", "--json"])
+
+        assert result.exit_code == 1
+        assert json.loads(result.output)["ok"] is False
+
+    def test_doctor_cli_human_output_exits_nonzero_on_hard_error(self, monkeypatch):
+        from click.testing import CliRunner
+        from ghost.core.doctor import DoctorCheck
+        from ghost.ui import cli as cli_module
+
+        monkeypatch.setattr(
+            cli_module,
+            "run_doctor_checks",
+            lambda: [DoctorCheck("database", False, "unavailable", "error")],
+        )
+
+        result = CliRunner().invoke(cli_module.cli, ["doctor"])
+
+        assert result.exit_code == 1
+        assert "FAIL" in result.output
+
     def test_doctor_reports_unsupported_database_override(self):
         from ghost.core.config import Config
         from ghost.core.doctor import has_error, run_doctor_checks, summarize_doctor_checks

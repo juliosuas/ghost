@@ -17,7 +17,7 @@ from rich import box
 
 from ghost.core.investigator import GhostInvestigator
 from ghost.core.config import config
-from ghost.core.doctor import run_doctor_checks, summarize_doctor_checks
+from ghost.core.doctor import has_error, run_doctor_checks, summarize_doctor_checks
 from ghost.backend.db import (
     delete_investigation,
     get_graph_data,
@@ -129,6 +129,8 @@ def doctor(as_json):
 
     if as_json:
         click.echo(json.dumps(summarize_doctor_checks(checks), indent=2))
+        if has_error(checks):
+            raise click.exceptions.Exit(1)
         return
 
     print_banner()
@@ -145,6 +147,8 @@ def doctor(as_json):
     for check in checks:
         add(check.name, check.ok, check.detail, check.severity)
     console.print(table)
+    if has_error(checks):
+        raise click.exceptions.Exit(1)
 
 
 @cli.command(name="list")
