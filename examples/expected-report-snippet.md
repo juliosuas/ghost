@@ -26,9 +26,9 @@
     "modules_run": ["username"],
     "module_count": 1,
     "source_urls": [
-      "https://github.com/demo_user",
-      "https://gitlab.com/demo_user",
-      "https://www.reddit.com/user/demo_user"
+      "https://github.example.com/demo_user",
+      "https://gitlab.example.com/demo_user",
+      "https://reddit.example.com/user/demo_user"
     ],
     "source_url_count": 3,
     "module_errors": {},
@@ -37,7 +37,7 @@
 }
 ```
 
-Inspect provenance on a live demo with:
+A live `ghost investigate` report uses the same keys. Profile `url` values then follow each platform's real URL template, and username hits record integer HTTP status codes rather than `"synthetic"`.
 
 ```bash
 python3 -c "import json; print(json.dumps(json.load(open('demo-report.json'))['provenance'], indent=2))"

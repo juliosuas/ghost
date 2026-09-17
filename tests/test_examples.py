@@ -16,12 +16,14 @@ SAMPLE_CASE = EXAMPLES / "sample-username-case.json"
 
 @pytest.fixture(autouse=True)
 def _setup_test_db(tmp_path, monkeypatch):
+    """Point Ghost at a throwaway SQLite file for each test."""
     test_db = tmp_path / "test_ghost.db"
     monkeypatch.setattr("ghost.backend.db.DB_PATH", test_db)
     init_db()
 
 
 def test_sample_username_case_is_importable():
+    """The shipped username sample must import as a Ghost case file."""
     data = json.loads(SAMPLE_CASE.read_text(encoding="utf-8"))
     required = {"id", "target", "input_type", "status", "started_at"}
     assert required <= set(data)
@@ -40,6 +42,7 @@ def test_sample_username_case_is_importable():
 
 
 def test_sample_case_report_provenance(tmp_path):
+    """Report provenance should list the sample's placeholder source URLs."""
     data = json.loads(SAMPLE_CASE.read_text(encoding="utf-8"))
     output = tmp_path / "report.json"
     ReportGenerator().generate(data, "json", str(output))
@@ -50,4 +53,5 @@ def test_sample_case_report_provenance(tmp_path):
     assert provenance["scope"] == "authorized self-audit demo"
     assert provenance["modules_run"] == ["username"]
     assert provenance["source_url_count"] == 3
-    assert "https://github.com/demo_user" in provenance["source_urls"]
+    assert "https://github.example.com/demo_user" in provenance["source_urls"]
+    assert all(".example.com" in url for url in provenance["source_urls"])

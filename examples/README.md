@@ -8,7 +8,7 @@ Synthetic, authorized-looking artifacts so newcomers can see Ghost's case-file a
 | [`sample-email-investigation.md`](sample-email-investigation.md) | Markdown write-up of a fake email self-audit. |
 | [`expected-report-snippet.md`](expected-report-snippet.md) | Short JSON report excerpt (`summary` + `provenance`) matching `ghost investigate --format json`. |
 
-All names, emails, and profile URLs are invented (`demo_user`, `alex.rivera.demo@example.com`). Do not treat them as real OSINT results.
+All names, emails, and profile URLs are invented (`demo_user`, `alex.rivera.demo@example.com`). Sample profile links use non-resolving `*.example.com` placeholders, not live GitHub/GitLab/Reddit hits. Do not treat them as real OSINT results.
 
 ## Import the username case
 
@@ -23,10 +23,10 @@ Re-import with `--replace` if that ID already exists locally.
 
 ## Generate a live report instead
 
-Prefer the [authorized self-audit demo](../docs/self-audit-demo.md) against **your own** public handle:
+Prefer the [authorized self-audit demo](../docs/self-audit-demo.md) against **your own** public handle. Replace `YOUR_HANDLE` before running (`--authorized` does not make `demo_user` your target):
 
 ```bash
-python3 -m ghost investigate demo_user \
+python3 -m ghost investigate YOUR_HANDLE \
   --type username \
   --modules username \
   --no-ai \

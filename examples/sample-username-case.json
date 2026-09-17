@@ -17,23 +17,24 @@
       "profiles": [
         {
           "platform": "GitHub",
-          "url": "https://github.com/demo_user",
-          "status": 200
+          "url": "https://github.example.com/demo_user",
+          "status": "synthetic"
         },
         {
           "platform": "GitLab",
-          "url": "https://gitlab.com/demo_user",
-          "status": 200
+          "url": "https://gitlab.example.com/demo_user",
+          "status": "synthetic"
         },
         {
           "platform": "Reddit",
-          "url": "https://www.reddit.com/user/demo_user",
-          "status": 200
+          "url": "https://reddit.example.com/user/demo_user",
+          "status": "synthetic"
         }
       ],
       "found_count": 3,
       "not_found_count": 67,
       "errors": [],
+      "note": "Synthetic sample. URLs are non-resolving example.com placeholders, not live HTTP results. A real username run records integer HTTP status codes.",
       "sherlock": {
         "available": false,
         "note": "sherlock not installed"
