@@ -1,0 +1,68 @@
+{
+  "id": "a1b2c3d4-e5f6-4789-8abc-def012345678",
+  "target": "demo_user",
+  "input_type": "username",
+  "scope": "authorized self-audit demo",
+  "authorized_use": true,
+  "started_at": "2026-09-17T12:00:00+00:00",
+  "completed_at": "2026-09-17T12:00:08+00:00",
+  "status": "completed",
+  "summary": "Investigation of username target: demo_user\n\nData collected from 1 intelligence modules. Found 3 associated online profiles.\n\nOverall risk assessment: LOW (score: 10.0%)",
+  "risk_score": 0.1,
+  "errors": [],
+  "findings": {
+    "username": {
+      "username": "demo_user",
+      "platforms_checked": 70,
+      "profiles": [
+        {
+          "platform": "GitHub",
+          "url": "https://github.com/demo_user",
+          "status": 200
+        },
+        {
+          "platform": "GitLab",
+          "url": "https://gitlab.com/demo_user",
+          "status": 200
+        },
+        {
+          "platform": "Reddit",
+          "url": "https://www.reddit.com/user/demo_user",
+          "status": 200
+        }
+      ],
+      "found_count": 3,
+      "not_found_count": 67,
+      "errors": [],
+      "sherlock": {
+        "available": false,
+        "note": "sherlock not installed"
+      }
+    }
+  },
+  "correlations": {
+    "identities": [],
+    "connections": [],
+    "timeline": [],
+    "locations": [],
+    "ai_insights": []
+  },
+  "ai_analysis": {
+    "risk_score": 0.1,
+    "risk_assessment": {
+      "risk_score": 0.1,
+      "risk_level": "low",
+      "risk_factors": [
+        "Found on 3 platforms",
+        "No known breaches",
+        "No location data found"
+      ]
+    },
+    "digital_footprint": {
+      "platform_count": 3,
+      "breach_exposure": 0,
+      "locations_found": []
+    },
+    "note": "Basic analysis — configure OPENAI_API_KEY for AI-powered insights"
+  }
+}

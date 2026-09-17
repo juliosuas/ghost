@@ -64,3 +64,5 @@ Ghost v2 is prioritizing trust before breadth. The demo should say:
 > Ghost stores the investigation as a case file with scope, authorization, findings, provenance, and graph-ready entities. SQLite is the local default; Postgres comes later for team deployments.
 
 Avoid demoing a random person. Use Julio's own public handle or another explicitly authorized test target.
+
+Redacted sample JSON/Markdown (fake `demo_user` / `alex.rivera.demo@example.com` only) lives in [`examples/`](../examples/). A terminal demo GIF should be captured to [`docs/screenshots/demo.gif`](screenshots/demo.gif) when one exists; that file is not in the repo yet.

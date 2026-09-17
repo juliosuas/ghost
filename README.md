@@ -13,7 +13,7 @@
 
 **Multi-vector intelligence gathering with durable case files, AI-assisted analysis, and professional reports.**
 
-[Quick Start](#-quick-start) · [Features](#-features) · [Installation](#-installation) · [Demo](docs/self-audit-demo.md) · [Roadmap](#-roadmap) · [Contributing](#-contributing)
+[Quick Start](#-60-second-quick-start) · [Features](#-features) · [Installation](#-installation) · [Demo](docs/self-audit-demo.md) · [Roadmap](#-roadmap) · [Contributing](#-contributing)
 
 ---
 
@@ -23,23 +23,28 @@
 
 ## 🔍 Why Ghost?
 
-| Capability | Ghost | Maltego | SpiderFoot | Recon-ng |
-|---|:---:|:---:|:---:|:---:|
-| **AI-Powered Correlation** | ✅ | ❌ | ❌ | ❌ |
-| **70+ Built-in Username Checks** | ✅ | ✅¹ | ✅ | ~100 |
-| **SQLite Case Files & Provenance** | ✅ | ❌ | ✅ | ❌ |
-| **Professional HTML/PDF Reports** | ✅ | ✅ | ✅ | ❌ |
-| **Web Dashboard with Graphs** | ✅ | ✅ | ✅ | ❌ |
-| **Image/Face Analysis** | ✅ | ❌ | ❌ | ❌ |
-| **Dark Web Monitoring** | ✅ | Plugin | ✅ | ❌ |
-| **REST API** | ✅ | ❌ | ✅ | ❌ |
-| **Beautiful CLI** | ✅ | ❌ | ✅ | ✅ |
-| **100% Open Source** | ✅ | ❌ | ✅ | ✅ |
-| **Zero Cost** | ✅ | ❌ | ✅ | ✅ |
+Ghost is a **case-file workspace** for authorized OSINT — not a drop-in replacement for a username hunter like [maigret](https://github.com/soxoj/maigret).
 
-<sup>¹ Requires paid transforms</sup>
+Maigret (and Sherlock) are excellent at asking "does this handle exist on hundreds or thousands of sites?" Ghost's job is different: take a **single authorized target**, run the modules you choose, store a **SQLite case file** with scope and authorization, and emit a **report with provenance** (what ran, which source URLs were collected, what failed).
+
+| | Ghost | maigret alone |
+|---|---|---|
+| **Durable case files** | SQLite investigations with `ghost list` / `show` / `export` / `import` | Collection reports, not a Ghost-style case store |
+| **Authorization + scope** | Recorded on the case and in report provenance (`--authorized`, `--scope`) | Not a first-class case-file field |
+| **Multi-vector modules** | Username, email, phone, domain, image, social, darkweb, geolocation | Username-focused |
+| **Username coverage** | 70 built-in HTTP presence checks; optional Sherlock if installed | Thousands of sites with deeper per-site checks |
+| **AI correlation** | Optional OpenAI; `--no-ai` uses deterministic heuristics | No |
+| **Local readiness** | `ghost doctor` and `ghost doctor --json` | No |
+
+Use maigret or Sherlock when you need the widest username hunt. Use Ghost when you need that evidence stored as a defensible investigation you can retrieve, export, and hand off.
+
+The built-in username module is an HTTP status check against 70 platforms. It can shell out to Sherlock when the binary is on `PATH`. It does not wrap maigret.
+
+Compared with general OSINT suites (Maltego, SpiderFoot, Recon-ng), Ghost's current wedge is **local, authorized case files + provenance**, not "more transforms than everyone else." The REST API and graph JSON exist today; a dashboard HTML UI is **not shipped** yet. HTML/JSON reports always work; PDF needs the optional `weasyprint` extra.
 
 ## 📸 Screenshots
+
+A terminal demo GIF belongs at [`docs/screenshots/demo.gif`](docs/screenshots/demo.gif) once captured from the [self-audit walkthrough](docs/self-audit-demo.md). That file is not in the repo yet (placeholder path only — see [`docs/screenshots/README.md`](docs/screenshots/README.md)). Until then, these SVG captures show the CLI:
 
 <div align="center">
   <img src="docs/screenshots/doctor.svg" width="48%" alt="Ghost doctor command">
@@ -54,94 +59,83 @@
 
 | Module | Description | Status |
 |---|---|:---:|
-| 🔤 **Username Enumeration** | Check 70+ built-in platforms; optional Sherlock expands coverage | ✅ |
-| 📧 **Email Intelligence** | Breach checks, account discovery, WHOIS, validation | ✅ |
+| 🔤 **Username Enumeration** | 70 built-in HTTP presence checks; optional Sherlock expands coverage | ✅ |
+| 📧 **Email Intelligence** | Validation, MX, Gravatar; HIBP when `HIBP_API_KEY` is set | ✅ |
 | 📱 **Phone OSINT** | Carrier lookup, location, social media association | ✅ |
 | 🌐 **Domain Recon** | WHOIS, DNS, subdomains, tech stack, SSL, Wayback | ✅ |
-| 🖼️ **Image Analysis** | EXIF extraction, reverse search, face detection, geolocation | ✅ |
+| 🖼️ **Image Analysis** | EXIF + hashes; reverse-search URLs; face detection if `face_recognition` is installed | ✅ |
 | 🕵️ **Social Media Deep Dive** | Instagram, X, Facebook, LinkedIn, TikTok, Reddit | ✅ |
 | 🌑 **Dark Web Monitoring** | Ahmia search, breach databases, paste sites | ✅ |
 
 ### Intelligence Engine
 
-- 🤖 **AI Correlation** — LLM-driven pattern recognition across all data sources
-- 📊 **Risk Assessment** — Automated risk scoring and threat profiling
-- 🧩 **Entity Resolution** — Connect fragmented identities into unified profiles
-- 📈 **Timeline Analysis** — Chronological activity mapping
+- 🤖 **AI Correlation** — Optional OpenAI analysis when `OPENAI_API_KEY` is set; `--no-ai` uses deterministic heuristics
+- 📊 **Risk Assessment** — Heuristic scoring always; richer profiling when OpenAI is configured
+- 🧩 **Entity Resolution** — Connects findings into graph-ready entities in SQLite
+- 📈 **Timeline Analysis** — Heuristic event list from module output
 
 ### Output & Reporting
 
-- 📄 **Professional Reports** — HTML, PDF, and JSON with network graphs and timelines
-- 🗺️ **Web Dashboard** — D3.js entity graphs, map view, evidence gallery
-- 🖥️ **Beautiful CLI** — Rich-powered interactive interface with live progress
-- 🔌 **REST API** — Full programmatic access for automation pipelines
+- 📄 **Reports** — HTML and JSON always; PDF when the optional `weasyprint` extra is installed
+- 🗺️ **Entity graph API** — D3-compatible JSON at `/api/investigation/<id>/graph` (dashboard HTML is not shipped yet)
+- 🖥️ **CLI** — Rich interface, `ghost doctor`, and case-file commands (`list`, `show`, `export`, `import`, `delete`)
+- 🔌 **REST API** — Flask server at `python -m ghost.backend.server` (API investigations require `authorized_use: true`)
+
+## ⚡ 60-second Quick Start
+
+Authorized self-audit, no OpenAI key, no extra OSINT binaries. Copy-paste:
+
+```bash
+git clone https://github.com/juliosuas/ghost.git
+cd ghost
+python3 -m pip install -e .
+python3 -m ghost doctor
+python3 -m ghost investigate demo_user \
+  --type username \
+  --modules username \
+  --no-ai \
+  --authorized \
+  --scope "authorized self-audit demo" \
+  --format json \
+  --output demo-report.json
+python3 -m ghost list
+```
+
+`python3 -m ghost` is the supported entrypoint (`ghost/__main__.py`). After `pip install -e .`, the `ghost` console script from `pyproject.toml` is equivalent.
+
+`ghost doctor` checks SQLite, optional keys, and module imports. The investigate command stores a case in SQLite and writes `demo-report.json` with a `provenance` block. Redacted sample output lives in [`examples/`](examples/).
+
+Use only an authorized target (your own handle, or a synthetic name like `demo_user`). Full walkthrough: [authorized self-audit demo](docs/self-audit-demo.md).
+
+More CLI: `ghost show <id-prefix>`, `ghost export`, `ghost import`, `ghost delete`, or `python3 -m ghost` with no arguments for the interactive menu.
 
 ## 📦 Installation
 
-### From Source (Recommended)
+### From source (supported)
 
 ```bash
 git clone https://github.com/juliosuas/ghost.git
 cd ghost
-pip install -r requirements.txt
-cp .env.example .env   # Add your API keys
+python3 -m pip install -e .
+# optional: python3 -m pip install -e ".[dev]"   # pytest + ruff, matches CI
+# optional: cp .env.example .env                 # only if you need OpenAI or extra APIs
 ```
 
-### With pip
+`requirements.txt` is a broader dependency pin used by the Docker image. For local CLI work, the editable install above is the path CI and the `ghost` script expect.
 
-```bash
-pip install ghost-osint
-```
+### PyPI
 
-### With Docker
+`pip install ghost-osint` is **not published yet**. The package name in `pyproject.toml` is `ghost-osint`; install from source until a GitHub release is tagged (see [CHANGELOG.md](CHANGELOG.md)).
+
+### Docker
 
 ```bash
 git clone https://github.com/juliosuas/ghost.git
 cd ghost
+cp .env.example .env   # required by docker-compose env_file
 docker-compose up -d
-# Dashboard → http://localhost:5000
+# REST API → http://localhost:5000  (dashboard HTML is not shipped yet)
 ```
-
-## ⚡ Quick Start
-
-```bash
-# Interactive mode — guided investigation wizard
-python -m ghost.ui.cli
-
-# Investigate an email address
-python -m ghost.ui.cli --target "john.doe@example.com" --type email
-
-# Username hunt across built-in platforms
-python -m ghost.ui.cli --target "johndoe" --type username
-
-# Phone number lookup
-python -m ghost.ui.cli --target "+15551234567" --type phone
-
-# Domain reconnaissance
-python -m ghost.ui.cli --target "example.com" --type domain
-
-# Deterministic demo mode without OpenAI calls
-ghost investigate johndoe --type username --modules username --no-ai --authorized --scope "self-audit demo" --format json
-
-# Check local setup, database, keys, and optional tools
-ghost doctor
-ghost doctor --json
-
-# List saved investigation case files
-ghost list
-
-# Show one saved case by full ID or unique prefix
-ghost show 5f3a9c2e
-
-# Export/import portable case files for handoff or backup
-ghost export 5f3a9c2e --output cases/johndoe.json
-ghost import cases/johndoe.json --replace
-
-# Delete a local case file when retention is no longer needed
-ghost delete 5f3a9c2e --yes
-```
-
-For a safe public walkthrough, use the [authorized self-audit demo](docs/self-audit-demo.md).
 
 ## 🔧 Configuration
 
@@ -149,7 +143,7 @@ Copy `.env.example` to `.env` and add your API keys:
 
 | Key | Service | Required | Free Tier |
 |---|---|:---:|:---:|
-| `OPENAI_API_KEY` | AI Analysis & Correlation | **Yes** | — |
+| `OPENAI_API_KEY` | AI analysis & correlation | No (`--no-ai` / heuristic fallback) | — |
 | `HIBP_API_KEY` | Have I Been Pwned | No | ❌ |
 | `SHODAN_API_KEY` | Shodan | No | ✅ |
 | `GOOGLE_CX` / `GOOGLE_API_KEY` | Google Custom Search | No | ✅ |
@@ -173,7 +167,7 @@ write data to the wrong place.
 See the [storage adapter boundary](docs/storage-adapter-boundary.md) for the
 contract Ghost must satisfy before advertising non-SQLite backends.
 
-> **Note:** Ghost works with just an OpenAI key. Additional keys unlock more modules.
+> **Note:** OpenAI is optional. `--no-ai` (and a missing key) uses heuristic summaries. Additional keys unlock more modules (HIBP, Shodan, Google CSE, and so on).
 
 ## 📖 Usage
 
@@ -183,8 +177,14 @@ contract Ghost must satisfy before advertising non-SQLite backends.
 from ghost.core.investigator import GhostInvestigator
 
 investigator = GhostInvestigator()
-investigation = investigator.investigate("johndoe", input_type="username")
-report_path = investigator.generate_report(investigation, format="html", output_path="report.html")
+investigation = investigator.investigate(
+    "demo_user",
+    input_type="username",
+    modules=["username"],
+    scope="authorized self-audit",
+    authorized_use=True,
+)
+report_path = investigator.generate_report(investigation, format="json", output_path="demo-report.json")
 ```
 
 ### REST API
@@ -196,21 +196,23 @@ python -m ghost.backend.server
 # Submit an investigation
 curl -X POST http://localhost:5000/api/investigate \
   -H "Content-Type: application/json" \
-  -d '{"target": "johndoe", "input_type": "username", "authorized_use": true, "scope": "self-audit"}'
+  -d '{"target": "demo_user", "input_type": "username", "authorized_use": true, "scope": "authorized self-audit"}'
 ```
 
 ## 🏗️ Architecture
 
 ```
-ghost/
-├── core/           # Investigation orchestration & correlation engine
-├── modules/        # OSINT collection modules (username, email, phone, etc.)
-├── ai/             # LLM-powered analysis, summarization & entity resolution
-├── ui/             # CLI (Rich) and web dashboard
-├── backend/        # Flask API server & SQLite database
-├── templates/      # HTML/PDF report templates
-├── data/           # Platform lists, signatures, patterns
-└── tests/          # Test suite
+.
+├── ghost/           # Python package (`ghost` / `python -m ghost`)
+│   ├── core/        # Orchestration, doctor checks, reports
+│   ├── modules/     # OSINT collectors (username, email, phone, …)
+│   ├── ai/          # Optional LLM analysis; heuristic fallback
+│   ├── ui/          # Rich CLI
+│   ├── backend/     # Flask REST API and SQLite case store
+│   └── templates/   # HTML report templates
+├── examples/        # Redacted sample case + expected report snippet
+├── docs/            # Self-audit demo, storage contract, screenshots
+└── tests/           # pytest suite (CI)
 ```
 
 ## 🗺️ Roadmap
@@ -236,12 +238,14 @@ Contributions are welcome! Here's how to get started:
 
 CI runs Ruff and pytest on Python 3.10, 3.11, and 3.12. PRs should include proof plus screenshots or terminal output when user-facing behavior changes.
 
+Good first issues and docs questions have templates under [`.github/ISSUE_TEMPLATE/`](.github/ISSUE_TEMPLATE/). Please do not include private target data.
+
 ### Areas We Need Help
 
 - 🌍 **New OSINT modules** — More platforms, more data sources
 - 🧪 **Testing** — Unit tests, integration tests, edge cases
 - 📝 **Documentation** — Guides, tutorials, API docs
-- 🎨 **Dashboard UI** — Frontend improvements, new visualizations
+- 🎨 **Dashboard UI** — First HTML frontend for the existing graph API
 - 🌐 **Translations** — i18n support for global users
 
 ## 💬 Community
