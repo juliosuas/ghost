@@ -1,0 +1,58 @@
+name: Good first issue
+description: Suggest a small, well-scoped task for a new contributor.
+title: "good first issue: "
+labels: ["good first issue"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this for work a new contributor can finish in one focused PR.
+        Keep it authorized-use only. Do not include private target data.
+  - type: textarea
+    id: task
+    attributes:
+      label: Task
+      description: What should someone implement or fix?
+      placeholder: Add a unit test for ghost list --json when the database is empty.
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: Why this is a good first issue
+      description: Point to the files, commands, or docs a newcomer should read first.
+      placeholder: |
+        Start at ghost/ui/cli.py (list_cases) and tests/test_investigator.py (TestCliCaseCommands).
+        Run python3 -m pip install -e ".[dev]" then python3 -m pytest -q.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: How will a reviewer know this is done?
+      placeholder: |
+        - Test covers the empty-state path
+        - ruff check / pytest still pass
+        - No private investigation artifacts committed
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Documentation
+        - Tests
+        - CLI
+        - Examples/demo
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: safety
+    attributes:
+      label: Safety notes
+      description: Confirm this does not add stalking, unauthorized collection, or private-data examples.
+    validations:
+      required: true

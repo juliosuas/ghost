@@ -82,3 +82,8 @@ pythonpath = ["."]
 [tool.ruff]
 target-version = "py310"
 line-length = 120
+
+# Keep the historical Ruff default (pycodestyle errors + Pyflakes). Ruff 0.12+
+# expanded the default rule set and broke CI on an otherwise unchanged tree.
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F"]

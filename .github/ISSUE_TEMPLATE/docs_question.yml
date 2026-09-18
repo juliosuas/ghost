@@ -1,0 +1,48 @@
+name: Docs or question
+description: Ask about Ghost usage, or report a docs gap. Not a bug report.
+title: "docs: "
+labels: ["documentation", "question"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Prefer [GitHub Discussions](https://github.com/juliosuas/ghost/discussions) for open-ended ideas.
+        Use this template when the README, Quick Start, or other docs are unclear — or you need a usage answer that should become docs.
+
+        Do not paste private emails, phone numbers, or investigation reports.
+  - type: dropdown
+    id: kind
+    attributes:
+      label: Kind
+      options:
+        - Question about using Ghost
+        - README / Quick Start gap
+        - Missing or outdated docs page
+        - Example or demo clarification
+    validations:
+      required: true
+  - type: textarea
+    id: question
+    attributes:
+      label: Question or docs gap
+      description: What did you try, and which page or command was confusing?
+      placeholder: |
+        I followed the 60-second Quick Start in the README.
+        `python3 -m ghost doctor` worked, but I am unsure whether OpenAI is required for ghost list.
+    validations:
+      required: true
+  - type: textarea
+    id: expected_docs
+    attributes:
+      label: What the docs should say
+      description: Optional. A sentence you wish had been in the README or self-audit demo.
+    validations:
+      required: false
+  - type: input
+    id: install
+    attributes:
+      label: Install method
+      description: Source editable install, Docker, or something else.
+      placeholder: python3 -m pip install -e .
+    validations:
+      required: false
