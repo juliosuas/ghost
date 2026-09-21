@@ -35,7 +35,7 @@ BANNER = """
 ██║   ██║██╔══██║██║   ██║╚════██║   ██║
 ╚██████╔╝██║  ██║╚██████╔╝███████║   ██║
  ╚═════╝ ╚═╝  ╚═╝ ╚═════╝ ╚══════╝   ╚═╝
-    AI-Powered OSINT Investigation Platform
+    Local OSINT case files + provenance
 """
 
 DISCLAIMER = (
@@ -81,7 +81,7 @@ def create_progress():
 @click.option("--authorized", is_flag=True, help="Acknowledge this investigation is authorized")
 @click.pass_context
 def cli(ctx, target, input_type, modules, output, fmt, no_ai, scope, authorized):
-    """Ghost — AI-Powered OSINT Investigation Platform"""
+    """Ghost — local authorized OSINT case files + provenance."""
     if ctx.invoked_subcommand is not None:
         return
 
@@ -124,7 +124,19 @@ def interactive():
 @cli.command()
 @click.option("--json", "as_json", is_flag=True, help="Emit machine-readable readiness JSON")
 def doctor(as_json):
-    """Check local Ghost configuration and optional capabilities."""
+    """Check local Ghost configuration, optional capabilities, and exposure gates.
+
+    Fail-closed (exit 1, JSON ok=false) when:
+
+    \b
+      GHOST_SECRET_KEY  missing or equal to ghost-dev-key / example placeholders
+      GHOST_HOST        set to anything other than 127.0.0.1 or localhost
+                        (unset is OK for CLI-only; 0.0.0.0 / public binds fail)
+      GHOST_API_TOKEN   empty (API readiness; Flask token auth is not wired yet)
+
+    These gates do not block CLI-only `investigate --authorized --no-ai`,
+    which never starts Flask.
+    """
     checks = run_doctor_checks()
 
     if as_json:

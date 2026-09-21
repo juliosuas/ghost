@@ -34,10 +34,14 @@ class Config:
     fullcontact_api_key: str = os.getenv("FULLCONTACT_API_KEY", "")
 
     # Server
+    # Bind default stays 0.0.0.0 until a later lock to loopback. Doctor fails if
+    # GHOST_HOST is explicitly set off loopback; unset is OK for CLI-only.
     host: str = os.getenv("GHOST_HOST", "0.0.0.0")
     port: int = int(os.getenv("GHOST_PORT", "5000"))
     debug: bool = os.getenv("GHOST_DEBUG", "false").lower() == "true"
     secret_key: str = os.getenv("GHOST_SECRET_KEY", "ghost-dev-key")
+    # Read for doctor / future Flask token auth (not enforced in the API yet).
+    api_token: str = os.getenv("GHOST_API_TOKEN", "")
 
     # Database
     database_url: str = os.getenv("DATABASE_URL", f"sqlite:///{DATA_DIR / 'ghost.db'}")

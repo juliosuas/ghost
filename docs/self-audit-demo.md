@@ -19,6 +19,9 @@ The demo should highlight:
 
 ```bash
 # 1. Verify local setup
+# On a fresh clone, doctor exits 1 until GHOST_SECRET_KEY and GHOST_API_TOKEN
+# are set (and GHOST_HOST, if set, is 127.0.0.1 or localhost). That is an
+# exposure gate. CLI investigate below does not start Flask and still works.
 ghost doctor
 ghost doctor --json
 

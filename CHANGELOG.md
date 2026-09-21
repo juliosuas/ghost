@@ -8,6 +8,8 @@ The package version in `pyproject.toml` is **0.1.0**. There is no GitHub release
 
 ### Added
 
+- `ghost doctor` / `ghost doctor --json` fail closed on insecure server defaults: missing or placeholder `GHOST_SECRET_KEY`, non-loopback `GHOST_HOST`, empty `GHOST_API_TOKEN`. CLI-only `investigate --authorized --no-ai` is unchanged and does not start Flask.
+- `.env.example` documents the locked names `GHOST_SECRET_KEY`, `GHOST_HOST`, and `GHOST_API_TOKEN`.
 - 60-second Quick Start in the README using copy-paste commands that match the real CLI (`python3 -m pip install -e .`, `python3 -m ghost doctor`, `python3 -m ghost investigate … --no-ai --authorized`).
 - Honest Ghost vs maigret comparison in Why Ghost (case files, provenance, multi-vector vs username-hunter coverage).
 - Synthetic sample case and report snippet under `examples/` (fake usernames/emails only).
@@ -16,7 +18,8 @@ The package version in `pyproject.toml` is **0.1.0**. There is no GitHub release
 
 ### Changed
 
-- Ruff lint `select` pinned to the historical default (`E4`, `E7`, `E9`, `F`) so CI is not blocked by Ruff 0.12+ expanding rules on an unchanged codebase.
+- README positioning: local authorized case files + provenance, not "AI-Powered Platform." Social and darkweb modules marked experimental / not Quick Start defaults.
+- Ruff lint `select` pinned to the historical default (`E4`, `E7`, `E9`, `F`) so CI is not blocked by Ruff 0.12+ expanding rules on an unchanged codebase (this was the #12 main failure; kept from #13).
 
 - README install path: editable source install is supported; `pip install ghost-osint` is marked unpublished (PyPI 404).
 - README claims calibrated to the current CLI: OpenAI is optional, dashboard HTML is not shipped, PDF needs `weasyprint`, username coverage is 70 built-in HTTP checks plus optional Sherlock.

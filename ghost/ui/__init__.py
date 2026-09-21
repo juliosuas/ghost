@@ -1,1 +1,1 @@
-"""Ghost UI — CLI and web dashboard."""
+"""Ghost UI — Rich CLI (dashboard HTML is not shipped)."""
