@@ -109,10 +109,16 @@ class TestInputTypeDetection:
 class TestConfigModule:
     """Tests for configuration."""
 
-    def test_default_config(self):
+    def test_default_config(self, monkeypatch):
+        monkeypatch.delenv("GHOST_HOST", raising=False)
+        monkeypatch.delenv("GHOST_SECRET_KEY", raising=False)
+        monkeypatch.delenv("GHOST_API_TOKEN", raising=False)
         cfg = Config()
         assert cfg.openai_model == "gpt-4o"
         assert cfg.port == 5000
+        assert cfg.host == "127.0.0.1"
+        assert cfg.secret_key == ""
+        assert cfg.api_token == ""
         assert cfg.request_timeout == 30
         assert cfg.max_concurrent_requests == 20
         assert "username" in cfg.enabled_modules
