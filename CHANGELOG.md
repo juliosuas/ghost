@@ -6,6 +6,15 @@ The package version in `pyproject.toml` is **0.1.0**. There is no GitHub release
 
 ## [Unreleased]
 
+### Security
+
+- Flask API now requires `GHOST_API_TOKEN` on case-data routes (`Authorization: Bearer` or `X-Ghost-Token`). `/api/health` stays unauthenticated.
+- `GHOST_HOST` defaults to `127.0.0.1` instead of `0.0.0.0`.
+- `GHOST_SECRET_KEY` no longer soft-defaults to `ghost-dev-key`; missing or placeholder values fail outside debug when starting the API.
+- In-memory rate limiting uses `RATE_LIMIT_REQUESTS` / `RATE_LIMIT_PERIOD` on `/api/*`.
+- CORS is restricted to localhost origins (not `*`).
+- Docker image runs as uid 1000, healthchecks use Python `urllib` (no curl on slim), and compose publishes `127.0.0.1` on the host.
+
 ### Added
 
 - `ghost doctor` / `ghost doctor --json` fail closed on insecure server defaults: missing or placeholder `GHOST_SECRET_KEY`, non-loopback `GHOST_HOST`, empty `GHOST_API_TOKEN`. CLI-only `investigate --authorized --no-ai` is unchanged and does not start Flask.

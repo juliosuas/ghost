@@ -79,7 +79,7 @@ A terminal demo GIF belongs at [`docs/screenshots/demo.gif`](docs/screenshots/de
 - 📄 **Reports** — HTML and JSON always; PDF when the optional `weasyprint` extra is installed
 - 🗺️ **Entity graph API** — D3-compatible JSON at `/api/investigation/<id>/graph` (dashboard HTML is not shipped yet)
 - 🖥️ **CLI** — Rich interface, `ghost doctor`, and case-file commands (`list`, `show`, `export`, `import`, `delete`)
-- 🔌 **REST API** — Flask at `python -m ghost.backend.server` (`authorized_use: true` required). Doctor must be green before you consider it ready; token auth / bind / CORS lock are not in this release.
+- 🔌 **REST API** — Flask at `python -m ghost.backend.server` (loopback by default). Case-data routes require `GHOST_API_TOKEN`; `authorized_use: true` is still required as case-file policy.
 
 ## ⚡ 60-second Quick Start
 
@@ -134,9 +134,9 @@ python3 -m pip install -e .
 ```bash
 git clone https://github.com/juliosuas/ghost.git
 cd ghost
-cp .env.example .env   # required by docker-compose env_file
+cp .env.example .env   # set GHOST_SECRET_KEY and GHOST_API_TOKEN; required by env_file
 docker-compose up -d
-# REST API → http://localhost:5000  (dashboard HTML is not shipped yet)
+# REST API → http://127.0.0.1:5000  (published on loopback only; dashboard HTML is not shipped)
 ```
 
 ## 🔧 Configuration
@@ -145,9 +145,9 @@ Copy `.env.example` to `.env` and add your API keys:
 
 | Key | Service | Required | Notes |
 |---|---|:---:|---|
-| `GHOST_SECRET_KEY` | Flask signing key | For `ghost doctor` / before starting the API | Doctor **fails** if missing or equal to `ghost-dev-key`. CLI-only investigate does not need it. |
-| `GHOST_HOST` | Flask bind address | No (unset = CLI-only OK) | Doctor **fails** if set to anything other than `127.0.0.1` or `localhost`. Code default is still `0.0.0.0` until bind is locked. |
-| `GHOST_API_TOKEN` | API readiness token | For `ghost doctor` / API readiness | Doctor **fails** if empty. Flask does **not** enforce this yet (token auth is a follow-up). |
+| `GHOST_SECRET_KEY` | Flask signing key | For `ghost doctor` / starting the API | Doctor **fails** if missing or equal to `ghost-dev-key`. API refuses to start without a real secret (outside debug). CLI-only investigate does not need it. |
+| `GHOST_HOST` | Flask bind address | No (unset = CLI-only OK) | Doctor **fails** if set off-loopback. Code default is `127.0.0.1`. |
+| `GHOST_API_TOKEN` | API token | For `ghost doctor` / Flask `/api/*` | Doctor **fails** if empty. Send `Authorization: Bearer <token>` or `X-Ghost-Token`. `/api/health` is the only unauthenticated API route. |
 | `OPENAI_API_KEY` | Optional LLM analysis | No (`--no-ai` / heuristic fallback) | Not part of Quick Start. |
 | `HIBP_API_KEY` | Have I Been Pwned | No | Paid API. |
 | `SHODAN_API_KEY` | Shodan | No | Free tier available. |
@@ -155,7 +155,7 @@ Copy `.env.example` to `.env` and add your API keys:
 | `TWITTER_BEARER_TOKEN` | Twitter/X API | No | Free tier available. |
 | `IPINFO_TOKEN` | IP Geolocation | No | Free tier available. |
 
-`ghost doctor` and `ghost doctor --json` exit non-zero when any exposure gate fails (`ok: false` in JSON, with `checks[].name` equal to the env var). Setting these variables is **not** required to run `ghost investigate --authorized --no-ai`. Do not start `python -m ghost.backend.server` until doctor is green — Flask auth/CORS/bind hardening is not in this release.
+`ghost doctor` and `ghost doctor --json` exit non-zero when any exposure gate fails (`ok: false` in JSON, with `checks[].name` equal to the env var). Setting these variables is **not** required to run `ghost investigate --authorized --no-ai`. Do not start `python -m ghost.backend.server` until doctor is green.
 
 ### Storage
 
@@ -197,12 +197,13 @@ report_path = investigator.generate_report(investigation, format="json", output_
 ### REST API
 
 ```bash
-# Start the server
+# Start the server (refuses to bind without GHOST_SECRET_KEY + GHOST_API_TOKEN)
 python -m ghost.backend.server
 
 # Submit an investigation
-curl -X POST http://localhost:5000/api/investigate \
+curl -X POST http://127.0.0.1:5000/api/investigate \
   -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $GHOST_API_TOKEN" \
   -d '{"target": "demo_user", "input_type": "username", "authorized_use": true, "scope": "authorized self-audit"}'
 ```
 
