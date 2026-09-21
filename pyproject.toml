@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "ghost-osint"
 version = "0.1.0"
-description = "AI-Powered OSINT Investigation Platform"
+description = "Local authorized OSINT case-file tool with provenance"
 readme = "README.md"
 license = {text = "MIT"}
 requires-python = ">=3.10"

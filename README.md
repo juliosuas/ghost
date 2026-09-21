@@ -2,7 +2,7 @@
 
 # 👻 GHOST
 
-### AI-Powered OSINT Investigation Platform
+### Local authorized OSINT case files + provenance
 
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-3776AB.svg?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg?style=for-the-badge)](LICENSE)
@@ -11,13 +11,13 @@
 [![GitHub Stars](https://img.shields.io/github/stars/juliosuas/ghost?style=for-the-badge&logo=github)](https://github.com/juliosuas/ghost/stargazers)
 [![GitHub Issues](https://img.shields.io/github/issues/juliosuas/ghost?style=for-the-badge)](https://github.com/juliosuas/ghost/issues)
 
-**Multi-vector intelligence gathering with durable case files, AI-assisted analysis, and professional reports.**
+**A local case-file workspace for authorized self-audits — SQLite storage, scope/authorization, and report provenance. Not a SaaS. Not an "AI platform."**
 
 [Quick Start](#-60-second-quick-start) · [Features](#-features) · [Installation](#-installation) · [Demo](docs/self-audit-demo.md) · [Roadmap](#-roadmap) · [Contributing](#-contributing)
 
 ---
 
-*Automate OSINT investigations from a single target — name, email, phone, username, or photo — and let AI correlate everything into actionable intelligence.*
+*Run an authorized local investigation from a single target (username, email, phone, domain, or photo), store it as a case file, and keep a provenance trail of what ran and where evidence came from. OpenAI is optional (`--no-ai` is the Quick Start path).*
 
 </div>
 
@@ -33,8 +33,8 @@ Maigret (and Sherlock) are excellent at asking "does this handle exist on hundre
 | **Authorization + scope** | Recorded on the case and in report provenance (`--authorized`, `--scope`) | Not a first-class case-file field |
 | **Multi-vector modules** | Username, email, phone, domain, image, social, darkweb, geolocation | Username-focused |
 | **Username coverage** | 70 built-in HTTP presence checks; optional Sherlock if installed | Thousands of sites with deeper per-site checks |
-| **AI correlation** | Optional OpenAI; `--no-ai` uses deterministic heuristics | No |
-| **Local readiness** | `ghost doctor` and `ghost doctor --json` | No |
+| **Optional AI correlation** | OpenAI when configured; `--no-ai` uses deterministic heuristics | No |
+| **Local readiness** | `ghost doctor` / `--json` (fails closed on insecure server defaults) | No |
 
 Use maigret or Sherlock when you need the widest username hunt. Use Ghost when you need that evidence stored as a defensible investigation you can retrieve, export, and hand off.
 
@@ -64,12 +64,12 @@ A terminal demo GIF belongs at [`docs/screenshots/demo.gif`](docs/screenshots/de
 | 📱 **Phone OSINT** | Carrier lookup, location, social media association | ✅ |
 | 🌐 **Domain Recon** | WHOIS, DNS, subdomains, tech stack, SSL, Wayback | ✅ |
 | 🖼️ **Image Analysis** | EXIF + hashes; reverse-search URLs; face detection if `face_recognition` is installed | ✅ |
-| 🕵️ **Social Media Deep Dive** | Instagram, X, Facebook, LinkedIn, TikTok, Reddit | ✅ |
-| 🌑 **Dark Web Monitoring** | Ahmia search, breach databases, paste sites | ✅ |
+| 🕵️ **Social Media Deep Dive** | Experimental HTTP probes (Instagram, X, Reddit, TikTok, GitHub, LinkedIn). Not a full API-backed deep dive; **not a Quick Start default**. | ⚠️ experimental |
+| 🌑 **Dark Web Monitoring** | Experimental Ahmia / paste / HIBP probes. Not a monitoring product; **not a Quick Start default**. | ⚠️ experimental |
 
 ### Intelligence Engine
 
-- 🤖 **AI Correlation** — Optional OpenAI analysis when `OPENAI_API_KEY` is set; `--no-ai` uses deterministic heuristics
+- 🤖 **Optional AI correlation** — OpenAI analysis only when `OPENAI_API_KEY` is set; `--no-ai` uses deterministic heuristics
 - 📊 **Risk Assessment** — Heuristic scoring always; richer profiling when OpenAI is configured
 - 🧩 **Entity Resolution** — Connects findings into graph-ready entities in SQLite
 - 📈 **Timeline Analysis** — Heuristic event list from module output
@@ -79,7 +79,7 @@ A terminal demo GIF belongs at [`docs/screenshots/demo.gif`](docs/screenshots/de
 - 📄 **Reports** — HTML and JSON always; PDF when the optional `weasyprint` extra is installed
 - 🗺️ **Entity graph API** — D3-compatible JSON at `/api/investigation/<id>/graph` (dashboard HTML is not shipped yet)
 - 🖥️ **CLI** — Rich interface, `ghost doctor`, and case-file commands (`list`, `show`, `export`, `import`, `delete`)
-- 🔌 **REST API** — Flask server at `python -m ghost.backend.server` (API investigations require `authorized_use: true`)
+- 🔌 **REST API** — Flask at `python -m ghost.backend.server` (`authorized_use: true` required). Doctor must be green before you consider it ready; token auth / bind / CORS lock are not in this release.
 
 ## ⚡ 60-second Quick Start
 
@@ -103,7 +103,9 @@ python3 -m ghost list
 
 `python3 -m ghost` is the supported entrypoint (`ghost/__main__.py`). After `pip install -e .`, the `ghost` console script from `pyproject.toml` is equivalent.
 
-`ghost doctor` checks SQLite, optional keys, and module imports. The investigate command stores a case in SQLite and writes `demo-report.json` with a `provenance` block. Redacted sample output lives in [`examples/`](examples/).
+`ghost doctor` checks SQLite, optional keys, module imports, and **exposure gates**. On a fresh clone it exits **1** until `GHOST_SECRET_KEY` and `GHOST_API_TOKEN` are set (and `GHOST_HOST`, if set, is `127.0.0.1` or `localhost`). That does **not** block the `investigate` command below — CLI-only self-audit never starts Flask. See [Configuration](#-configuration).
+
+The investigate command stores a case in SQLite and writes `demo-report.json` with a `provenance` block. Redacted sample output lives in [`examples/`](examples/). Quick Start uses `--modules username` only; social and darkweb collectors are experimental and are not part of this path.
 
 Use only an authorized target (your own handle, or a synthetic name like `demo_user`). Full walkthrough: [authorized self-audit demo](docs/self-audit-demo.md).
 
@@ -141,14 +143,19 @@ docker-compose up -d
 
 Copy `.env.example` to `.env` and add your API keys:
 
-| Key | Service | Required | Free Tier |
-|---|---|:---:|:---:|
-| `OPENAI_API_KEY` | AI analysis & correlation | No (`--no-ai` / heuristic fallback) | — |
-| `HIBP_API_KEY` | Have I Been Pwned | No | ❌ |
-| `SHODAN_API_KEY` | Shodan | No | ✅ |
-| `GOOGLE_CX` / `GOOGLE_API_KEY` | Google Custom Search | No | ✅ |
-| `TWITTER_BEARER_TOKEN` | Twitter/X API | No | ✅ |
-| `IPINFO_TOKEN` | IP Geolocation | No | ✅ |
+| Key | Service | Required | Notes |
+|---|---|:---:|---|
+| `GHOST_SECRET_KEY` | Flask signing key | For `ghost doctor` / before starting the API | Doctor **fails** if missing or equal to `ghost-dev-key`. CLI-only investigate does not need it. |
+| `GHOST_HOST` | Flask bind address | No (unset = CLI-only OK) | Doctor **fails** if set to anything other than `127.0.0.1` or `localhost`. Code default is still `0.0.0.0` until bind is locked. |
+| `GHOST_API_TOKEN` | API readiness token | For `ghost doctor` / API readiness | Doctor **fails** if empty. Flask does **not** enforce this yet (token auth is a follow-up). |
+| `OPENAI_API_KEY` | Optional LLM analysis | No (`--no-ai` / heuristic fallback) | Not part of Quick Start. |
+| `HIBP_API_KEY` | Have I Been Pwned | No | Paid API. |
+| `SHODAN_API_KEY` | Shodan | No | Free tier available. |
+| `GOOGLE_CX` / `GOOGLE_API_KEY` | Google Custom Search | No | Free tier available. |
+| `TWITTER_BEARER_TOKEN` | Twitter/X API | No | Free tier available. |
+| `IPINFO_TOKEN` | IP Geolocation | No | Free tier available. |
+
+`ghost doctor` and `ghost doctor --json` exit non-zero when any exposure gate fails (`ok: false` in JSON, with `checks[].name` equal to the env var). Setting these variables is **not** required to run `ghost investigate --authorized --no-ai`. Do not start `python -m ghost.backend.server` until doctor is green — Flask auth/CORS/bind hardening is not in this release.
 
 ### Storage
 

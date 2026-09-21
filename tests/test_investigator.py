@@ -225,24 +225,30 @@ class TestDatabaseConfiguration:
             resolve_database_path("postgresql://user:pass@localhost/ghost")
 
     def test_doctor_checks_return_structured_results(self):
-        from ghost.core.doctor import has_error, run_doctor_checks, summarize_doctor_checks
+        from ghost.core.doctor import run_doctor_checks, summarize_doctor_checks
 
         checks = run_doctor_checks()
         names = {check.name for check in checks}
 
         assert "database" in names
         assert "enabled modules" in names
-        assert has_error(checks) is False
+        assert "GHOST_SECRET_KEY" in names
+        assert "GHOST_HOST" in names
+        assert "GHOST_API_TOKEN" in names
 
         summary = summarize_doctor_checks(checks)
-        assert summary["ok"] is True
-        assert summary["error_count"] == 0
+        assert isinstance(summary["ok"], bool)
+        assert isinstance(summary["error_count"], int)
         assert isinstance(summary["warning_count"], int)
         assert {check["name"] for check in summary["checks"]} == names
 
-    def test_doctor_cli_json_output(self):
+    def test_doctor_cli_json_output(self, monkeypatch):
         from click.testing import CliRunner
         from ghost.ui.cli import cli
+
+        monkeypatch.setenv("GHOST_SECRET_KEY", "unit-test-secret-not-a-default")
+        monkeypatch.setenv("GHOST_HOST", "127.0.0.1")
+        monkeypatch.setenv("GHOST_API_TOKEN", "unit-test-api-token")
 
         result = CliRunner().invoke(cli, ["doctor", "--json"])
         assert result.exit_code == 0
