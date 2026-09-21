@@ -8,6 +8,7 @@ The package version in `pyproject.toml` is **0.1.0**. There is no GitHub release
 
 ### Added
 
+- Provenance contract test freezes `_build_provenance` keys (`generated_at`, `target`, `input_type`, `investigation_id`, `scope`, `authorized_use`, `modules_run`, `module_count`, `source_urls`, `source_url_count`, `module_errors`, `global_errors`) against `examples/sample-username-case.json`.
 - `ghost doctor` / `ghost doctor --json` fail closed on insecure server defaults: missing or placeholder `GHOST_SECRET_KEY`, non-loopback `GHOST_HOST`, empty `GHOST_API_TOKEN`. CLI-only `investigate --authorized --no-ai` is unchanged and does not start Flask.
 - `.env.example` documents the locked names `GHOST_SECRET_KEY`, `GHOST_HOST`, and `GHOST_API_TOKEN`.
 - 60-second Quick Start in the README using copy-paste commands that match the real CLI (`python3 -m pip install -e .`, `python3 -m ghost doctor`, `python3 -m ghost investigate … --no-ai --authorized`).
