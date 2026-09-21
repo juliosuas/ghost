@@ -29,6 +29,7 @@ The package version in `pyproject.toml` is **0.1.0**. There is no GitHub release
 ### Changed
 
 - README positioning: local authorized case files + provenance, not "AI-Powered Platform." Social and darkweb modules marked experimental / not Quick Start defaults.
+- Default investigations no longer auto-run experimental `social` or `darkweb` collectors. Opt in with `--modules social` / `--modules darkweb`.
 - Ruff lint `select` pinned to the historical default (`E4`, `E7`, `E9`, `F`) so CI is not blocked by Ruff 0.12+ expanding rules on an unchanged codebase (this was the #12 main failure; kept from #13).
 
 - README install path: editable source install is supported; `pip install ghost-osint` is marked unpublished (PyPI 404).

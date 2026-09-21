@@ -83,15 +83,19 @@ class TestInvestigationModel:
 
 class TestModuleRouting:
     def test_username_modules(self):
-        assert "username" in INPUT_TYPE_MODULES["username"]
-        assert "social" in INPUT_TYPE_MODULES["username"]
+        assert INPUT_TYPE_MODULES["username"] == ["username"]
+        assert "social" not in INPUT_TYPE_MODULES["username"]
+        assert "darkweb" not in INPUT_TYPE_MODULES["username"]
 
     def test_email_modules(self):
         assert "email" in INPUT_TYPE_MODULES["email"]
         assert "username" in INPUT_TYPE_MODULES["email"]
+        assert "social" not in INPUT_TYPE_MODULES["email"]
+        assert "darkweb" not in INPUT_TYPE_MODULES["email"]
 
     def test_phone_modules(self):
-        assert "phone" in INPUT_TYPE_MODULES["phone"]
+        assert INPUT_TYPE_MODULES["phone"] == ["phone"]
+        assert "social" not in INPUT_TYPE_MODULES["phone"]
 
     def test_domain_modules(self):
         assert "domain" in INPUT_TYPE_MODULES["domain"]
@@ -568,8 +572,12 @@ class TestGhostInvestigator:
         assert result.status == "completed"
         assert result.target == "johndoe"
         assert "username" in result.findings
+        assert "social" not in result.findings
+        assert "darkweb" not in result.findings
         assert result.summary == "Test investigation summary."
         mock_username.run.assert_called_once()
+        mock_social.run.assert_not_called()
+        mock_darkweb.run.assert_not_called()
 
     def test_progress_callback(self):
         events = []

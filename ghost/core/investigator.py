@@ -20,13 +20,17 @@ from ghost.ai.analyzer import AIAnalyzer
 from ghost.ai.summarizer import Summarizer
 
 
+# Opt-in collectors. Still registered on GhostInvestigator, but they are not
+# part of default input-type routing or Config.enabled_modules.
+EXPERIMENTAL_MODULES = frozenset({"social", "darkweb"})
+
 INPUT_TYPE_MODULES = {
-    "username": ["username", "social", "darkweb"],
-    "email": ["email", "username", "social", "darkweb"],
-    "phone": ["phone", "social"],
+    "username": ["username"],
+    "email": ["email", "username"],
+    "phone": ["phone"],
     "domain": ["domain", "geolocation"],
     "image": ["image"],
-    "name": ["username", "social", "darkweb"],
+    "name": ["username"],
     "auto": [],
 }
 
@@ -135,9 +139,13 @@ class GhostInvestigator:
         investigation = Investigation(target, input_type, scope=scope, authorized_use=authorized_use)
         investigation.status = "running"
 
-        # Determine which modules to run
-        module_names = modules or INPUT_TYPE_MODULES.get(input_type, [])
-        module_names = [m for m in module_names if m in self.config.enabled_modules]
+        # Default routing respects enabled_modules. An explicit module list is
+        # opt-in (needed so --modules social still runs after experimental
+        # collectors leave the default enabled list).
+        if modules:
+            module_names = [m.strip() for m in modules if isinstance(m, str) and m.strip() in self._modules]
+        else:
+            module_names = [m for m in INPUT_TYPE_MODULES.get(input_type, []) if m in self.config.enabled_modules]
 
         # Phase 1: Collect data from all modules concurrently
         self._report_progress("collector", "start", f"Running {len(module_names)} modules")

@@ -106,7 +106,7 @@ class Config:
 
     # Module toggles
     enabled_modules: list = field(
-        default_factory=lambda: ["username", "email", "phone", "social", "domain", "image", "darkweb", "geolocation"]
+        default_factory=lambda: ["username", "email", "phone", "domain", "image", "geolocation"]
     )
 
     # Request settings

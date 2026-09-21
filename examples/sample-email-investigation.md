@@ -7,7 +7,7 @@ This is a **redacted teaching example**, not a live Ghost run. The address is in
 - **Scope:** authorized self-audit demo
 - **Authorized:** yes
 - **AI:** disabled (`--no-ai`)
-- **Modules that would run for `email`:** `email`, `username`, `social`, `darkweb` (see `INPUT_TYPE_MODULES` in `ghost/core/investigator.py`)
+- **Modules that would run for `email`:** `email`, `username`. `social` and `darkweb` are experimental and **off by default** (see `INPUT_TYPE_MODULES` in `ghost/core/investigator.py`).
 
 ## Command (authorized use only)
 
@@ -22,7 +22,7 @@ python3 -m ghost investigate alex.rivera.demo@example.com \
   --output demo-email-report.json
 ```
 
-Restrict `--modules email` in demos so Ghost does not fan out username/social/darkweb against a handle derived from the mailbox.
+Restrict `--modules email` in demos if you do not want Ghost to also run the username collector on a handle derived from the mailbox. Social/darkweb stay off unless you pass `--modules social` or `--modules darkweb`.
 
 ## Expected module fields
 

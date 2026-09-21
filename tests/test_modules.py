@@ -123,6 +123,8 @@ class TestConfigModule:
         assert cfg.max_concurrent_requests == 20
         assert "username" in cfg.enabled_modules
         assert "email" in cfg.enabled_modules
+        assert "social" not in cfg.enabled_modules
+        assert "darkweb" not in cfg.enabled_modules
 
     def test_has_api_key_empty(self):
         cfg = Config()
