@@ -334,13 +334,26 @@ class TestReportProvenance:
 
 # ── API safety gates ────────────────────────────────────────────────
 
+_TEST_API_TOKEN = "test-api-token-not-for-production"
+
 
 class TestApiSafetyGates:
+    @pytest.fixture(autouse=True)
+    def _api_security(self, monkeypatch):
+        monkeypatch.setattr("ghost.core.config.config.api_token", _TEST_API_TOKEN)
+        from ghost.backend import server as server_mod
+
+        server_mod.reset_rate_limiter()
+
     def test_api_requires_authorized_use_acknowledgement(self):
         from ghost.backend.server import app
 
         client = app.test_client()
-        response = client.post("/api/investigate", json={"target": "johndoe", "input_type": "username"})
+        response = client.post(
+            "/api/investigate",
+            json={"target": "johndoe", "input_type": "username"},
+            headers={"X-Ghost-Token": _TEST_API_TOKEN},
+        )
 
         assert response.status_code == 400
         assert response.get_json()["error"] == "authorized_use must be true for API investigations"
@@ -359,6 +372,7 @@ class TestApiSafetyGates:
                 "scope": "self-audit",
                 "modules": ["username"],
             },
+            headers={"Authorization": f"Bearer {_TEST_API_TOKEN}"},
         )
 
         assert response.status_code == 202
