@@ -24,10 +24,12 @@ Verified against live GitHub (`juliosuas/ghost`), not the plan-time snapshot.
 Locked order still holds:
 
 1. A+B doctor + honesty — **DONE (#15)**
-2. auth (#16 rebase + merge) — Gilfoyle
-3. provenance contract test
-4. experimental darkweb/social OFF by default
+2. auth — Gilfoyle: rebase-assist **[#18](https://github.com/juliosuas/ghost/pull/18)** (do not also merge stale #16)
+3. provenance contract — **[#17](https://github.com/juliosuas/ghost/pull/17)**
+4. experimental darkweb/social OFF — **[#19](https://github.com/juliosuas/ghost/pull/19)**
 5. deps stretch (kill if not in review Friday)
+
+Conductor status doc for this snapshot: **[#20](https://github.com/juliosuas/ghost/pull/20)** (this file). Close #14 after #20 lands.
 
 ---
 
@@ -86,7 +88,7 @@ Reading `Config.api_token` / calling `validate_flask_runtime` in `server.py` is 
 
 ## S2. Rebase #16 onto `main` without touching doctor
 
-Gilfoyle owns the product PR. Rebase-assist branch: `cursor/auth-rebase-onto-main-f486` (draft). Do **not** force-push `cursor/infra-security-defaults-6d9d` unless Gilfoyle asks.
+Gilfoyle owns the product PR. Rebase-assist: **[#18](https://github.com/juliosuas/ghost/pull/18)** (`cursor/auth-rebase-onto-main-f486`). Do **not** force-push `cursor/infra-security-defaults-6d9d` unless Gilfoyle asks. Do **not** merge both #16 and #18.
 
 ### Why it conflicts
 
@@ -191,14 +193,14 @@ Owners: **Dinesh** = product merge on Ghost. **Gilfoyle** = auth product. **Juli
 
 | Order | PR | Branch | Owner | Merge when | Acceptance (Friday) |
 |---|---|---|---|---|---|
-| 0b | This status doc | `cursor/hardening-status-f486` | Julio | Immediately (docs). Then close #14 as superseded. | File exists on `main`; no app code. |
+| 0b | **[#20](https://github.com/juliosuas/ghost/pull/20)** this status doc | `cursor/hardening-status-f486` | Julio | Immediately (docs). Then close #14 as superseded. | File exists on `main`; no app code. |
 | 1+2 | #15 A+B | merged | Dinesh | **DONE** | Doctor FAIL + README H1 honesty. Do not reopen. |
-| 1 leftover | README roadmap / Areas We Need Help | optional tiny PR **after** #16 | Dinesh | SHOULD, not MUST. Kill if Express. | Roadmap SaaS items marked Won't or deleted. No new modules ask. |
-| **3** | Auth/bind/Docker | #16 **or** rebase-assist `cursor/auth-rebase-onto-main-f486` | **Gilfoyle** | **Next merge.** Do not merge PR4/PR5 first if they fight `config.py`. | See §S2 acceptance. Draft until Gilfoyle marks ready. |
-| 3.1 | Doctor honesty strings | tiny, after #16 | Dinesh | After Flask is wired | Unset-host detail no longer claims `0.0.0.0` default; token detail no longer says "not wired yet". No check-logic change. |
-| **4** | Provenance contract | `cursor/provenance-contract-f486` | Julio | After #16 (files do not overlap; order is policy) | `pytest tests/test_provenance_contract.py` fails if a provenance key is deleted. |
-| **5** | social/darkweb off | `cursor/experimental-modules-off-f486` | Julio (Dinesh reviews) | After #16 | Default username investigate does not call Social/DarkWeb. `--modules social` still can. |
-| 6 | Unify deps | not opened unless #16 merged **and** time remains | Julio | Stretch. **KILL** if not in review Friday. | Docker build without dlib. |
+| 1 leftover | README roadmap / Areas We Need Help | optional tiny PR **after** auth | Dinesh | SHOULD, not MUST. Kill if Express. | Roadmap SaaS items marked Won't or deleted. No new modules ask. |
+| **3** | Auth/bind/Docker | **[#18](https://github.com/juliosuas/ghost/pull/18)** rebase-assist (supersedes conflicting #16) | **Gilfoyle** | **Next merge.** | See §S2 acceptance. Draft until Gilfoyle marks ready. Do **not** merge #16 and #18. |
+| 3.1 | Doctor honesty strings | tiny, after #18 | Dinesh | After Flask is wired | Unset-host detail no longer claims `0.0.0.0` default; token detail no longer says "not wired yet". No check-logic change. |
+| **4** | Provenance contract | **[#17](https://github.com/juliosuas/ghost/pull/17)** | Julio | After #18 (files do not overlap; order is policy) | `pytest tests/test_provenance_contract.py` fails if a provenance key is deleted. |
+| **5** | social/darkweb off | **[#19](https://github.com/juliosuas/ghost/pull/19)** | Julio (Dinesh reviews) | After #18 | Default username investigate does not call Social/DarkWeb. `--modules social` still can. |
+| 6 | Unify deps | not opened unless #18 merged **and** time remains | Julio | Stretch. **KILL** if not in review Friday. | Docker build without dlib. |
 
 ### Friday kill template (fill 2026-09-25, do not improvise)
 
