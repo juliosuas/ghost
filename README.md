@@ -64,8 +64,8 @@ A terminal demo GIF belongs at [`docs/screenshots/demo.gif`](docs/screenshots/de
 | 📱 **Phone OSINT** | Carrier lookup, location, social media association | ✅ |
 | 🌐 **Domain Recon** | WHOIS, DNS, subdomains, tech stack, SSL, Wayback | ✅ |
 | 🖼️ **Image Analysis** | EXIF + hashes; reverse-search URLs; face detection if `face_recognition` is installed | ✅ |
-| 🕵️ **Social Media Deep Dive** | Experimental HTTP probes (Instagram, X, Reddit, TikTok, GitHub, LinkedIn). Not a full API-backed deep dive; **not a Quick Start default**. | ⚠️ experimental |
-| 🌑 **Dark Web Monitoring** | Experimental Ahmia / paste / HIBP probes. Not a monitoring product; **not a Quick Start default**. | ⚠️ experimental |
+| 🕵️ **Social Media Deep Dive** | Experimental HTTP probes (Instagram, X, Reddit, TikTok, GitHub, LinkedIn). **Off by default.** Opt in with `--modules social`. | ⚠️ experimental |
+| 🌑 **Dark Web Monitoring** | Experimental Ahmia / paste / HIBP probes. **Off by default.** Opt in with `--modules darkweb`. | ⚠️ experimental |
 
 ### Intelligence Engine
 
@@ -105,7 +105,7 @@ python3 -m ghost list
 
 `ghost doctor` checks SQLite, optional keys, module imports, and **exposure gates**. On a fresh clone it exits **1** until `GHOST_SECRET_KEY` and `GHOST_API_TOKEN` are set (and `GHOST_HOST`, if set, is `127.0.0.1` or `localhost`). That does **not** block the `investigate` command below — CLI-only self-audit never starts Flask. See [Configuration](#-configuration).
 
-The investigate command stores a case in SQLite and writes `demo-report.json` with a `provenance` block. Redacted sample output lives in [`examples/`](examples/). Quick Start uses `--modules username` only; social and darkweb collectors are experimental and are not part of this path.
+The investigate command stores a case in SQLite and writes `demo-report.json` with a `provenance` block. Redacted sample output lives in [`examples/`](examples/). Quick Start uses `--modules username` only; social and darkweb collectors are experimental, **off by default**, and run only when named in `--modules`.
 
 Use only an authorized target (your own handle, or a synthetic name like `demo_user`). Full walkthrough: [authorized self-audit demo](docs/self-audit-demo.md).
 
