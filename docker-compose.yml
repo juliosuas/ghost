@@ -14,8 +14,10 @@ services:
       # /app/ghost/investigations.
       GHOST_HOME: "/app/ghost"
     volumes:
+      # Named volumes. A missing host bind such as ./data or ./investigations
+      # is created by Docker as root, and uid 1000 cannot write it.
       - ghost_data:/app/ghost/data
-      - ./investigations:/app/ghost/investigations
+      - ghost_investigations:/app/ghost/investigations
     restart: unless-stopped
     user: "1000:1000"
     healthcheck:
@@ -32,3 +34,4 @@ services:
 
 volumes:
   ghost_data:
+  ghost_investigations:
