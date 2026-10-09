@@ -22,6 +22,7 @@ from ghost.backend.db import (
     delete_investigation,
     get_graph_data,
     get_investigation,
+    init_db,
     list_investigations,
     save_investigation,
 )
@@ -82,6 +83,10 @@ def create_progress():
 @click.pass_context
 def cli(ctx, target, input_type, modules, output, fmt, no_ai, scope, authorized):
     """Ghost — local authorized OSINT case files + provenance."""
+    # Create the SQLite schema on first use so `ghost list`, `ghost import`, etc.
+    # work on a fresh install. `doctor` manages its own database check.
+    if ctx.invoked_subcommand != "doctor":
+        init_db()
     if ctx.invoked_subcommand is not None:
         return
 
