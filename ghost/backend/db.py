@@ -1,12 +1,13 @@
 """SQLite database layer for Ghost investigations."""
 
 import json
+import os
 import sqlite3
 from pathlib import Path
 from contextlib import contextmanager
-from urllib.parse import unquote, urlparse
 
 from ghost.core.config import config, DATA_DIR
+from ghost.core.paths import DIR_MODE, resolve_database_path as _resolve_database_path, restrict_db_file
 
 SCHEMA_VERSION = 2
 
@@ -19,38 +20,7 @@ def resolve_database_path(database_url: str) -> Path:
     limitation raised in early feedback. Other database engines are explicit
     roadmap items instead of silently falling back to an unexpected path.
     """
-    parsed = urlparse(database_url)
-
-    if parsed.scheme in ("", "sqlite"):
-        if parsed.scheme == "":
-            path = Path(database_url)
-        elif parsed.netloc and parsed.netloc != "localhost":
-            # sqlite://relative.db is parsed as netloc=relative.db; accept it as
-            # a local filename for developer ergonomics.
-            path = Path(unquote(parsed.netloc + parsed.path))
-        else:
-            raw_path = unquote(parsed.path)
-            # urlparse keeps the leading slash from sqlite:/// and absolute
-            # POSIX paths can arrive as //Users/... when formatted naively.
-            if raw_path.startswith("//"):
-                raw_path = raw_path[1:]
-            elif raw_path.startswith("/") and raw_path.count("/") == 1:
-                # sqlite:///ghost.db should behave like the documented local
-                # relative path, resolving under Ghost's data directory.
-                raw_path = raw_path[1:]
-            path = Path(raw_path)
-
-        if str(path) in ("", ":memory:"):
-            return Path(":memory:")
-        if not path.is_absolute():
-            path = DATA_DIR / path
-        return path
-
-    raise ValueError(
-        f"Unsupported DATABASE_URL scheme '{parsed.scheme}'. "
-        "Ghost v2 currently supports sqlite:///path/to/ghost.db. "
-        "PostgreSQL support is planned behind the storage adapter boundary."
-    )
+    return _resolve_database_path(database_url, data_dir=DATA_DIR)
 
 
 DB_PATH = resolve_database_path(config.database_url)
@@ -59,12 +29,18 @@ DB_PATH = resolve_database_path(config.database_url)
 def get_connection(database_path: Path | None = None) -> sqlite3.Connection:
     path = database_path or DB_PATH
     if str(path) != ":memory:":
+        parent_existed = path.parent.exists()
         path.parent.mkdir(parents=True, exist_ok=True)
+        if not parent_existed:
+            os.chmod(path.parent, DIR_MODE)
+        restrict_db_file(path)
     conn = sqlite3.connect(str(path), timeout=30)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA journal_mode=WAL")
     conn.execute("PRAGMA foreign_keys=ON")
     conn.execute("PRAGMA busy_timeout=5000")
+    if str(path) != ":memory:":
+        restrict_db_file(path)
     return conn
 
 
