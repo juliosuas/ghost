@@ -1,10 +1,10 @@
-version: "3.9"
-
 services:
   ghost:
     build: .
     ports:
-      - "127.0.0.1:${GHOST_PORT:-5000}:5000"
+      # Host and container use the same GHOST_PORT. Mapping only the host side
+      # to :5000 breaks when .env sets GHOST_PORT, because the app listens on it.
+      - "127.0.0.1:${GHOST_PORT:-5000}:${GHOST_PORT:-5000}"
     env_file:
       - .env
     environment:
@@ -13,9 +13,13 @@ services:
       # Keep the DB and reports on the mounted paths /app/ghost/data and
       # /app/ghost/investigations.
       GHOST_HOME: "/app/ghost"
+      # Same value Compose used for the published port.
+      GHOST_PORT: "${GHOST_PORT:-5000}"
     volumes:
+      # Named volumes. A missing host bind such as ./data or ./investigations
+      # is created by Docker as root, and uid 1000 cannot write it.
       - ghost_data:/app/ghost/data
-      - ./investigations:/app/ghost/investigations
+      - ghost_investigations:/app/ghost/investigations
     restart: unless-stopped
     user: "1000:1000"
     healthcheck:
@@ -24,7 +28,7 @@ services:
           "CMD",
           "python",
           "-c",
-          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:5000/api/health')",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:${GHOST_PORT:-5000}/api/health')",
         ]
       interval: 30s
       timeout: 10s
@@ -32,3 +36,4 @@ services:
 
 volumes:
   ghost_data:
+  ghost_investigations:

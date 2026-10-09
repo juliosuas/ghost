@@ -307,7 +307,43 @@ class TestEnvAndComposeDefaults:
         assert "GHOST_HOST=0.0.0.0" not in text
 
     def test_compose_publishes_loopback_not_all_interfaces(self):
-        text = (Path(__file__).resolve().parents[1] / "docker-compose.yml").read_text(encoding="utf-8")
-        assert "127.0.0.1:${GHOST_PORT:-5000}:5000" in text
+        root = Path(__file__).resolve().parents[1]
+        text = (root / "docker-compose.yml").read_text(encoding="utf-8")
+        dockerfile = (root / "Dockerfile").read_text(encoding="utf-8")
+        assert "127.0.0.1:${GHOST_PORT:-5000}:${GHOST_PORT:-5000}" in text
+        assert "127.0.0.1:${GHOST_PORT:-5000}:5000" not in text
         assert '"0.0.0.0:' not in text
         assert "urllib.request" in text
+        assert "127.0.0.1:${GHOST_PORT:-5000}/api/health" in text
+        assert 'GHOST_PORT: "${GHOST_PORT:-5000}"' in text
+        assert not text.lstrip().startswith("version:")
+        assert "127.0.0.1:5000/api/health" not in dockerfile
+        assert "GHOST_PORT" in dockerfile
+
+    def test_compose_volumes_match_runtime_data_paths(self):
+        root = Path(__file__).resolve().parents[1]
+        compose = (root / "docker-compose.yml").read_text(encoding="utf-8")
+        dockerfile = (root / "Dockerfile").read_text(encoding="utf-8")
+        # feat/ghost-home writes under GHOST_HOME=/app/ghost, not the package tree.
+        assert "ENV GHOST_HOME=/app/ghost" in dockerfile
+        assert 'GHOST_HOME: "/app/ghost"' in compose
+        assert "ghost_data:/app/ghost/data" in compose
+        assert "ghost_investigations:/app/ghost/investigations" in compose
+        assert "./data:" not in compose
+        assert "./investigations:" not in compose
+        assert ":/app/data" not in compose
+        assert ":/app/investigations" not in compose
+        assert "/app/ghost/data" in dockerfile
+        assert "/app/ghost/investigations" in dockerfile
+        assert 'user: "1000:1000"' in compose
+
+    def test_dockerignore_excludes_env_databases_and_investigations(self):
+        root = Path(__file__).resolve().parents[1]
+        lines = [
+            line.strip()
+            for line in (root / ".dockerignore").read_text(encoding="utf-8").splitlines()
+            if line.strip() and not line.strip().startswith("#")
+        ]
+        assert ".env" in lines
+        assert "*.db" in lines
+        assert "investigations/" in lines
