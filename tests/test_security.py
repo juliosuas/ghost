@@ -321,7 +321,9 @@ class TestEnvAndComposeDefaults:
         assert "ENV GHOST_HOME=/app/ghost" in dockerfile
         assert 'GHOST_HOME: "/app/ghost"' in compose
         assert "ghost_data:/app/ghost/data" in compose
-        assert "./investigations:/app/ghost/investigations" in compose
+        assert "ghost_investigations:/app/ghost/investigations" in compose
+        assert "./data:" not in compose
+        assert "./investigations:" not in compose
         assert ":/app/data" not in compose
         assert ":/app/investigations" not in compose
         assert "/app/ghost/data" in dockerfile

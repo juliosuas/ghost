@@ -153,7 +153,7 @@ docker-compose up -d
 # REST API → http://127.0.0.1:5000  (published on loopback only; dashboard HTML is not shipped)
 ```
 
-The image sets `GHOST_HOME=/app/ghost`, matching the `ghost_data` volume at `/app/ghost/data` and the investigations mount at `/app/ghost/investigations`.
+The image sets `GHOST_HOME=/app/ghost`. Compose persists that home with named volumes `ghost_data` (`/app/ghost/data`) and `ghost_investigations` (`/app/ghost/investigations`). Those are not host binds: if `./data` or `./investigations` is missing, Docker would create it as root and uid 1000 could not write.
 
 ## 🔧 Configuration
 
