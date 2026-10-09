@@ -44,7 +44,11 @@ Compared with general OSINT suites (Maltego, SpiderFoot, Recon-ng), Ghost's curr
 
 ## 📸 Screenshots
 
-A terminal demo GIF belongs at [`docs/screenshots/demo.gif`](docs/screenshots/demo.gif) once captured from the [self-audit walkthrough](docs/self-audit-demo.md). That file is not in the repo yet (placeholder path only — see [`docs/screenshots/README.md`](docs/screenshots/README.md)). Until then, these SVG captures show the CLI:
+<div align="center">
+  <img src="docs/screenshots/demo.gif" width="90%" alt="Ghost importing, listing, showing, and exporting a synthetic case file">
+</div>
+
+The GIF uses the synthetic sample case (no real targets); see [`docs/screenshots/README.md`](docs/screenshots/README.md). More CLI captures:
 
 <div align="center">
   <img src="docs/screenshots/doctor.svg" width="48%" alt="Ghost doctor command">
