@@ -9,6 +9,7 @@ from dataclasses import dataclass
 
 from ghost.backend.db import DB_PATH, get_connection, init_db, resolve_database_path
 from ghost.core.config import Config, config
+from ghost.core.paths import data_path_doctor_detail, legacy_reports_warning, relative_ghost_home_warning
 
 # Known insecure Flask/session defaults. Doctor fails if GHOST_SECRET_KEY is
 # missing or equals one of these (including the Config class default).
@@ -143,6 +144,13 @@ def run_doctor_checks(config_override: Config | None = None) -> list[DoctorCheck
         checks.append(DoctorCheck(label, bool(found), found or "not installed; built-in platform checks still run"))
 
     checks.append(DoctorCheck("enabled modules", bool(cfg.enabled_modules), ", ".join(cfg.enabled_modules), "error"))
+    checks.append(DoctorCheck("data path", True, data_path_doctor_detail()))
+    legacy_reports = legacy_reports_warning()
+    if legacy_reports:
+        checks.append(DoctorCheck("legacy reports", False, legacy_reports, "warn"))
+    relative_home = relative_ghost_home_warning()
+    if relative_home:
+        checks.append(DoctorCheck("GHOST_HOME", False, relative_home, "warn"))
     return checks
 
 

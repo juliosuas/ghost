@@ -15,8 +15,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY --chown=ghost:ghost . .
 
-RUN mkdir -p /app/data /app/investigations \
-    && chown ghost:ghost /app/data /app/investigations
+RUN mkdir -p /app/ghost/data /app/ghost/investigations \
+    && chown ghost:ghost /app/ghost/data /app/ghost/investigations \
+    && chmod 0700 /app/ghost/data /app/ghost/investigations
 
 USER ghost
 
@@ -24,6 +25,9 @@ EXPOSE 5000
 
 ENV PYTHONUNBUFFERED=1
 ENV FLASK_APP=ghost.backend.server
+# Data and investigations live under this home, matching the compose mounts
+# at /app/ghost/data and /app/ghost/investigations.
+ENV GHOST_HOME=/app/ghost
 # Listen on all *container* interfaces so Docker port publishing can reach the
 # app. Host-side publish stays on 127.0.0.1 in docker-compose.yml. The Python
 # default without this override remains 127.0.0.1.
