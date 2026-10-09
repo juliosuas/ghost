@@ -1,18 +1,24 @@
-"""Ghost configuration management."""
+"""Ghost configuration management.
+
+Importing this module calls :func:`ghost.core.paths.prepare_storage` as a side
+effect. That creates the private home (mode 0700) and may copy a legacy
+in-package database before anything else uses those paths.
+"""
 
 import os
 from dataclasses import dataclass, field
 from pathlib import Path
 from dotenv import load_dotenv
 
+from ghost.core.paths import prepare_storage
+
 load_dotenv()
 
+# Package root (code and templates). Writable data does not live here.
 BASE_DIR = Path(__file__).resolve().parent.parent
-DATA_DIR = BASE_DIR / "data"
-INVESTIGATIONS_DIR = BASE_DIR / "investigations"
-
-DATA_DIR.mkdir(exist_ok=True)
-INVESTIGATIONS_DIR.mkdir(exist_ok=True)
+_LAYOUT = prepare_storage()
+DATA_DIR = _LAYOUT.data_dir
+INVESTIGATIONS_DIR = _LAYOUT.investigations_dir
 
 # Placeholders that must never ship as a non-debug Flask secret.
 INSECURE_SECRET_DEFAULTS = frozenset(
@@ -97,8 +103,8 @@ class Config:
     secret_key: str = field(default_factory=lambda: os.getenv("GHOST_SECRET_KEY", ""))
     api_token: str = field(default_factory=lambda: os.getenv("GHOST_API_TOKEN", ""))
 
-    # Database
-    database_url: str = os.getenv("DATABASE_URL", f"sqlite:///{DATA_DIR / 'ghost.db'}")
+    # Database. DATABASE_URL wins; otherwise the file is under the resolved home.
+    database_url: str = os.getenv("DATABASE_URL", f"sqlite:///{_LAYOUT.database_path}")
 
     # Rate limiting — enforced on /api/* (except /api/health)
     rate_limit_requests: int = field(default_factory=lambda: int(_env_or("RATE_LIMIT_REQUESTS", "60")))
