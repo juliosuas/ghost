@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security issue
+    url: https://github.com/juliosuas/ghost/security/policy
+    about: Report security issues privately. See SECURITY.md and GitHub private reporting. Do not open a public issue.
