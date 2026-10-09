@@ -1,5 +1,6 @@
 """Local tool-report ingest. Synthetic fixtures only (demo_user, example.com)."""
 
+import csv
 import hashlib
 import sqlite3
 from datetime import datetime, timezone
@@ -249,6 +250,33 @@ class TestCaseAttachment:
         assert second.investigation["findings"]["username"]["profiles"][0]["url"] == "https://example.com/kept"
         assert len(_records(second.investigation)) == 3
 
+    def test_second_ingest_replaces_entities_relationships_point_at(self):
+        from ghost.backend.db import get_connection
+
+        first = _ingest("sherlock-demo_user.csv", "sherlock", case="demo_user")
+        profile_ids = {entity["id"] for entity in first.investigation["entities"] if entity["entity_type"] == "profile"}
+        assert profile_ids
+        conn = get_connection()
+        try:
+            assert conn.execute("PRAGMA foreign_keys").fetchone()[0] == 1
+            rels = conn.execute(
+                "SELECT source_entity_id, target_entity_id FROM relationships WHERE investigation_id = ?",
+                (first.investigation["id"],),
+            ).fetchall()
+        finally:
+            conn.close()
+        assert rels
+        assert any(row["target_entity_id"] in profile_ids for row in rels)
+
+        second = _ingest("sherlock-demo_user.csv", "sherlock", case="demo_user")
+        assert second.created is False
+        assert second.investigation["id"] == first.investigation["id"]
+        profiles = [entity for entity in second.investigation["entities"] if entity["entity_type"] == "profile"]
+        assert [entity["value"] for entity in profiles] == [EXACT_URL]
+        assert len(second.investigation["relationships"]) == 1
+        assert second.investigation["relationships"][0]["target_entity_id"] == profiles[0]["id"]
+        assert len(_records(second.investigation)) == 4
+
     def test_ambiguous_case_name_writes_nothing(self):
         _ingest("sherlock-demo_user.csv", "sherlock")
         _ingest("sherlock-demo_user.csv", "sherlock")
@@ -266,17 +294,65 @@ class TestSafety:
         monkeypatch.setattr("ghost.core.ingest.MAX_INGEST_BYTES", 10)
         path = tmp_path / "big.csv"
         path.write_bytes(b"x" * 11)
-        calls = {"read": 0}
-        real_read = Path.read_bytes
+        calls = {"open": 0}
+        real_open = Path.open
 
-        def wrapped(self):
-            calls["read"] += 1
-            return real_read(self)
+        def wrapped(self, *args, **kwargs):
+            if self == path:
+                calls["open"] += 1
+            return real_open(self, *args, **kwargs)
 
-        monkeypatch.setattr(Path, "read_bytes", wrapped)
+        monkeypatch.setattr(Path, "open", wrapped)
         with pytest.raises(IngestError, match="Refusing to read"):
             ingest_file(path, "sherlock", ingested_at=FROZEN)
-        assert calls["read"] == 0
+        assert calls["open"] == 0
+        assert list_investigations() == []
+
+    def test_bounded_read_rejects_when_stat_underreports(self, tmp_path, monkeypatch):
+        monkeypatch.setattr("ghost.core.ingest.MAX_INGEST_BYTES", 10)
+        path = tmp_path / "proc-like.csv"
+        path.write_bytes(b"x" * 1000)
+        real_stat = Path.stat
+        real_open = Path.open
+        reads = []
+
+        class _ZeroStat:
+            def __init__(self, real):
+                self.st_mode = real.st_mode
+                self.st_size = 0
+
+        def zero_stat(self, *args, **kwargs):
+            result = real_stat(self, *args, **kwargs)
+            if self == path:
+                return _ZeroStat(result)
+            return result
+
+        class _BoundedFile:
+            def __init__(self, raw):
+                self._raw = raw
+
+            def read(self, size=-1):
+                reads.append(size)
+                return self._raw.read(size)
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, exc_type, exc, tb):
+                self._raw.close()
+                return False
+
+        def tracking_open(self, *args, **kwargs):
+            raw = real_open(self, *args, **kwargs)
+            if self == path:
+                return _BoundedFile(raw)
+            return raw
+
+        monkeypatch.setattr(Path, "stat", zero_stat)
+        monkeypatch.setattr(Path, "open", tracking_open)
+        with pytest.raises(IngestError, match="grew past"):
+            ingest_file(path, "sherlock", ingested_at=FROZEN)
+        assert reads == [11]
         assert list_investigations() == []
 
     def test_read_is_rejected_if_the_file_grows_past_the_cap(self, tmp_path, monkeypatch):
@@ -341,6 +417,49 @@ class TestSafety:
         assert stored["summary"] == "original summary"
         assert "ingest" not in stored["findings"]
         assert len(list_investigations()) == 1
+
+    def test_deeply_nested_json_is_an_ingest_error(self, tmp_path):
+        nested = "[" * 10000 + "]" * 10000
+        sherlock = tmp_path / "nested.json"
+        sherlock.write_text(nested, encoding="utf-8")
+        with pytest.raises(IngestError, match="sherlock JSON: nesting exceeds"):
+            ingest_file(sherlock, "sherlock", ingested_at=FROZEN)
+
+        maigret = tmp_path / "nested-simple.json"
+        maigret.write_text(nested, encoding="utf-8")
+        with pytest.raises(IngestError, match="maigret JSON: nesting exceeds"):
+            ingest_file(maigret, "maigret", ingested_at=FROZEN)
+
+        record = (
+            '{"username": "demo_user", "url_user": "https://example.com/demo_user", '
+            '"sitename": "Example", "status": {"status": "Claimed", "url": "https://example.com/demo_user"}}'
+        )
+        ndjson = tmp_path / "nested.ndjson"
+        ndjson.write_text(record + "\n" + nested + "\n", encoding="utf-8")
+        with pytest.raises(IngestError, match="maigret ndjson line 2: nesting exceeds"):
+            ingest_file(ndjson, "maigret", ingested_at=FROZEN)
+        assert list_investigations() == []
+
+    def test_csv_field_over_the_reader_limit_is_an_ingest_error(self, tmp_path):
+        wide = "a" * (csv.field_size_limit() + 1)
+        sherlock = tmp_path / "wide.csv"
+        sherlock.write_text(
+            "username,name,url_main,url_user,exists,http_status,response_time_s\n"
+            f"demo_user,Example,https://example.com/,https://example.com/{wide},Claimed,200,0.1\n",
+            encoding="utf-8",
+        )
+        with pytest.raises(IngestError, match="sherlock CSV: field larger than field limit"):
+            ingest_file(sherlock, "sherlock", ingested_at=FROZEN)
+
+        holehe = tmp_path / "wide-holehe.csv"
+        holehe.write_text(
+            "name,domain,method,frequent_rate_limit,rateLimit,exists,emailrecovery,phoneNumber,others\n"
+            f"Example,example.com,register,False,False,True,,,{wide}\n",
+            encoding="utf-8",
+        )
+        with pytest.raises(IngestError, match="holehe CSV: field larger than field limit"):
+            ingest_file(holehe, "holehe", case="demo_user@example.com", ingested_at=FROZEN)
+        assert list_investigations() == []
 
     def test_parser_does_not_import_network_or_process_modules(self):
         import ast

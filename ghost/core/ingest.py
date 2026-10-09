@@ -242,6 +242,12 @@ def _require_tool(tool: str) -> str:
 
 
 def _read_capped(path: Path) -> bytes:
+    """Read at most MAX_INGEST_BYTES.
+
+    stat() is a fast-fail only. It is not the cap: some files report st_size 0
+    or change between the stat and the read. The read itself stops after one
+    extra byte and rejects anything larger.
+    """
     if not path.is_file():
         raise IngestError(f"{path} is not a file")
     size = path.stat().st_size
@@ -249,7 +255,8 @@ def _read_capped(path: Path) -> bytes:
         raise IngestError(
             f"Refusing to read {path.name}: {size} bytes exceeds the {MAX_INGEST_BYTES} byte ingest limit"
         )
-    data = path.read_bytes()
+    with path.open("rb") as handle:
+        data = handle.read(MAX_INGEST_BYTES + 1)
     if len(data) > MAX_INGEST_BYTES:
         raise IngestError(f"Refusing to import {path.name}: file grew past the {MAX_INGEST_BYTES} byte ingest limit")
     if not data:
@@ -356,14 +363,14 @@ def _looks_like_sherlock_json(text: str) -> bool:
 
 def _parse_sherlock_csv(text: str) -> dict:
     reader = csv.DictReader(io.StringIO(text, newline=""))
-    header = list(reader.fieldnames or [])
+    header, rows = _read_csv_rows(reader, "sherlock CSV")
     if header != _SHERLOCK_COLUMNS:
         raise IngestError(
             "sherlock CSV: header must be " + ",".join(_SHERLOCK_COLUMNS) + f" (got {','.join(header) or 'none'})"
         )
     records = []
     usernames = set()
-    for index, row in enumerate(reader, start=2):
+    for index, row in rows:
         if None in row and row[None]:
             raise IngestError(f"sherlock CSV: row {index} has extra columns")
         where = f"sherlock CSV row {index}"
@@ -501,6 +508,8 @@ def _parse_sherlock_json(text: str) -> dict:
         data = json.loads(text)
     except json.JSONDecodeError as exc:
         raise IngestError(f"sherlock JSON: {exc.msg} at line {exc.lineno}") from exc
+    except RecursionError as exc:
+        raise IngestError("sherlock JSON: nesting exceeds the parser limit") from exc
     if _looks_like_site_manifest(data):
         raise IngestError(
             "sherlock JSON: this looks like a site manifest. "
@@ -595,6 +604,8 @@ def _parse_maigret(text: str) -> dict:
         data = json.loads(text)
     except json.JSONDecodeError as exc:
         return _parse_maigret_ndjson(text, exc)
+    except RecursionError as exc:
+        raise IngestError("maigret JSON: nesting exceeds the parser limit") from exc
     if isinstance(data, dict) and _is_maigret_record(data):
         records = [_validate_maigret_record(data, "maigret ndjson line 1", require_sitename=True)]
         return _finish_maigret(records, "ndjson")
@@ -631,6 +642,8 @@ def _parse_maigret_ndjson(text: str, first_error: json.JSONDecodeError) -> dict:
             raise IngestError(
                 f"maigret report is neither simple JSON ({first_error.msg}) nor ndjson (line {index}: {exc.msg})"
             ) from exc
+        except RecursionError as exc:
+            raise IngestError(f"maigret ndjson line {index}: nesting exceeds the parser limit") from exc
         records.append(_validate_maigret_record(obj, f"maigret ndjson line {index}", require_sitename=True))
     return _finish_maigret(records, "ndjson")
 
@@ -726,7 +739,7 @@ def _finish_maigret(records: list[dict], source_format: str) -> dict:
 
 def _parse_holehe(text: str, *, source_name: str) -> dict:
     reader = csv.DictReader(io.StringIO(text, newline=""))
-    header = list(reader.fieldnames or [])
+    header, rows = _read_csv_rows(reader, "holehe CSV")
     if header == _HOLEHE_STANDARD:
         bool_columns = ["frequent_rate_limit", "rateLimit", "exists"]
         has_error = False
@@ -741,7 +754,7 @@ def _parse_holehe(text: str, *, source_name: str) -> dict:
             "(name,domain,rateLimit,error,exists,emailrecovery,phoneNumber,others)"
         )
     records = []
-    for index, row in enumerate(reader, start=2):
+    for index, row in rows:
         if None in row and row[None]:
             raise IngestError(f"holehe CSV: row {index} has extra columns")
         where = f"holehe CSV row {index}"
@@ -791,6 +804,16 @@ def _holehe_subject_from_filename(source_name: str) -> str | None:
     if email.count("@") != 1 or "/" in email or "\\" in email or any(ch.isspace() for ch in email):
         return None
     return email
+
+
+def _read_csv_rows(reader: csv.DictReader, label: str) -> tuple[list[str], list[tuple[int, dict]]]:
+    """Read a CSV fully, turning csv.Error (including the field-size limit) into IngestError."""
+    try:
+        header = list(reader.fieldnames or [])
+        rows = list(enumerate(reader, start=2))
+    except csv.Error as exc:
+        raise IngestError(f"{label}: {exc}") from exc
+    return header, rows
 
 
 def _csv_cell(row: dict, key: str, where: str) -> str:

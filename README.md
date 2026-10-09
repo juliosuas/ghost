@@ -238,7 +238,7 @@ python3 -m ghost ingest maigret-demo_user_simple.json --tool maigret --case demo
 python3 -m ghost ingest holehe_1710000000_demo_user@example.com_results.csv --tool holehe --case demo_user@example.com
 ```
 
-`ghost ingest` does not contact the network, launch the other tool, or run `investigate`. Files over 50 MB are refused before they are read. Invalid files import nothing (one database transaction). Each record stores the tool name, tool version when the file has one, the UTC ingest time, the SHA-256 of the file, and the URL exactly as written.
+`ghost ingest` does not contact the network, launch the other tool, or run `investigate`. A file larger than 50 MB is refused: `stat` rejects it before reading, and the read itself stops after one byte past that cap. Invalid files import nothing (one database transaction). Each record stores the tool name, tool version when the file has one, the UTC ingest time, the SHA-256 of the file, and the URL exactly as written.
 
 | Tool | What Ghost accepts |
 |---|---|
