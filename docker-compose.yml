@@ -10,9 +10,12 @@ services:
     environment:
       # Override GHOST_HOST from .env (127.0.0.1) so the proxy can reach the app.
       GHOST_HOST: "0.0.0.0"
+      # Keep the DB and reports on the mounted paths /app/ghost/data and
+      # /app/ghost/investigations.
+      GHOST_HOME: "/app/ghost"
     volumes:
-      - ghost_data:/app/data
-      - ./investigations:/app/investigations
+      - ghost_data:/app/ghost/data
+      - ./investigations:/app/ghost/investigations
     restart: unless-stopped
     user: "1000:1000"
     healthcheck:

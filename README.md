@@ -125,6 +125,18 @@ python3 -m pip install -e .
 
 `requirements.txt` is a broader dependency pin used by the Docker image. For local CLI work, the editable install above is the path CI and the `ghost` script expect.
 
+A pip or pipx install does **not** keep the SQLite database or investigation reports inside `site-packages` (those paths are wiped on reinstall or upgrade). Ghost writes them under a private home directory:
+
+| Precedence | Database | Investigations and reports |
+|---|---|---|
+| `DATABASE_URL` (if set) | that SQLite file | still under the home below |
+| `GHOST_HOME` | `$GHOST_HOME/data/ghost.db` | `$GHOST_HOME/investigations/` |
+| platformdirs (default) | `user_data_dir("ghost")/data/ghost.db` | `user_data_dir("ghost")/investigations/` |
+
+On Linux the platformdirs default is `~/.local/share/ghost`. The home directory is created mode `0700` and the database file mode `0600`. Override the home with `GHOST_HOME=/var/lib/ghost` (or any absolute path). `DATABASE_URL` overrides only the database file and takes precedence over `GHOST_HOME`. `ghost doctor` prints the resolved data path and which of `DATABASE_URL`, `GHOST_HOME`, or `platformdirs` won.
+
+If a previous install left `ghost.db` inside the package, Ghost **copies** it into the new location once — only when the new file is absent and `DATABASE_URL` is unset. The original file is left in place and is never overwritten.
+
 ### PyPI
 
 `pip install ghost-osint` is **not published yet**. The package name in `pyproject.toml` is `ghost-osint`; install from source until a GitHub release is tagged (see [CHANGELOG.md](CHANGELOG.md)).
@@ -138,6 +150,8 @@ cp .env.example .env   # set GHOST_SECRET_KEY and GHOST_API_TOKEN; required by e
 docker-compose up -d
 # REST API → http://127.0.0.1:5000  (published on loopback only; dashboard HTML is not shipped)
 ```
+
+The image sets `GHOST_HOME=/app/ghost`, matching the `ghost_data` volume at `/app/ghost/data` and the investigations mount at `/app/ghost/investigations`.
 
 ## 🔧 Configuration
 
@@ -161,10 +175,15 @@ Copy `.env.example` to `.env` and add your API keys:
 
 Ghost v2 stores investigations, findings, entities, and graph relationships in
 SQLite by default instead of JSON files. This gives local users durable,
-queryable storage without requiring a separate database server.
+queryable storage without requiring a separate database server. The file lives
+under the home from the [install section](#-installation) (`<home>/data/ghost.db`),
+not inside the package directory.
 
 ```env
-DATABASE_URL=sqlite:///./ghost/data/ghost.db
+# optional; overrides the database file only
+DATABASE_URL=sqlite:///ghost.db
+# optional; home for data/ and investigations/
+GHOST_HOME=/var/lib/ghost
 ```
 
 PostgreSQL is on the roadmap behind the storage adapter boundary. For now,
