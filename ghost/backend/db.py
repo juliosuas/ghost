@@ -216,6 +216,8 @@ def _store_entities_and_relationships(conn, inv_dict):
             (investigation_id, target_eid, eid, "has_profile", 0.9),
         )
 
+    _insert_ingest_entities(conn, investigation_id, target_eid, findings.get("ingest"))
+
     # Email entities
     email_data = findings.get("email", {})
     if email_data.get("email"):
@@ -248,6 +250,145 @@ def _store_entities_and_relationships(conn, inv_dict):
         _ensure_entity(
             "location", loc.get("value", ""), metadata={k: loc[k] for k in ("lat", "lon", "source") if k in loc}
         )
+
+
+def _ingest_metadata(record: dict) -> dict:
+    provenance = record.get("provenance") if isinstance(record.get("provenance"), dict) else {}
+    return {"ingest_tool": record.get("tool") or "", "provenance": provenance}
+
+
+def _insert_ingest_entities(conn, investigation_id: str, target_eid: int, ingest_findings) -> None:
+    """Add graph nodes for claimed ingested records. URLs are stored unchanged."""
+    if not isinstance(ingest_findings, dict):
+        return
+
+    seen = set()
+    for record in ingest_findings.get("records") or []:
+        if not isinstance(record, dict) or record.get("status") != "Claimed":
+            continue
+        platform = record.get("platform") or ""
+        if not isinstance(platform, str):
+            platform = str(platform)
+        metadata = _ingest_metadata(record)
+        url = record.get("url")
+        if isinstance(url, str) and url:
+            key = ("profile", url)
+            if key in seen:
+                continue
+            seen.add(key)
+            eid = conn.execute(
+                "INSERT INTO entities (investigation_id, entity_type, value, platform, confidence, metadata) VALUES (?, ?, ?, ?, ?, ?)",
+                (investigation_id, "profile", url, platform, 0.6, json.dumps(metadata)),
+            ).lastrowid
+            conn.execute(
+                "INSERT INTO relationships (investigation_id, source_entity_id, target_entity_id, relationship_type, confidence) VALUES (?, ?, ?, ?, ?)",
+                (investigation_id, target_eid, eid, "has_profile", 0.6),
+            )
+            continue
+
+        fields = record.get("fields") if isinstance(record.get("fields"), dict) else {}
+        domain = fields.get("domain") or ""
+        if isinstance(domain, str) and domain:
+            key = ("account", domain)
+            if key in seen:
+                continue
+            seen.add(key)
+            eid = conn.execute(
+                "INSERT INTO entities (investigation_id, entity_type, value, platform, confidence, metadata) VALUES (?, ?, ?, ?, ?, ?)",
+                (investigation_id, "account", domain, platform, 0.6, json.dumps(metadata)),
+            ).lastrowid
+            conn.execute(
+                "INSERT INTO relationships (investigation_id, source_entity_id, target_entity_id, relationship_type, confidence) VALUES (?, ?, ?, ?, ?)",
+                (investigation_id, target_eid, eid, "has_account", 0.6),
+            )
+
+
+def _delete_ingest_entities(conn, investigation_id: str) -> None:
+    """Remove entities previously written by ingest so a re-save does not duplicate them.
+
+    Relationships that point at those entities are deleted first. With
+    foreign_keys=ON, deleting the entity while a relationship still references
+    it fails unless the schema cascade runs; removing the rows explicitly
+    keeps the second ingest working either way.
+    """
+    rows = conn.execute(
+        "SELECT id, metadata FROM entities WHERE investigation_id = ?",
+        (investigation_id,),
+    ).fetchall()
+    ingest_ids = []
+    for row in rows:
+        try:
+            metadata = json.loads(row["metadata"] or "{}")
+        except json.JSONDecodeError:
+            continue
+        if isinstance(metadata, dict) and "ingest_tool" in metadata:
+            ingest_ids.append(row["id"])
+    if not ingest_ids:
+        return
+    placeholders = ",".join("?" * len(ingest_ids))
+    conn.execute(
+        f"DELETE FROM relationships WHERE source_entity_id IN ({placeholders}) OR target_entity_id IN ({placeholders})",
+        (*ingest_ids, *ingest_ids),
+    )
+    conn.execute(
+        f"DELETE FROM entities WHERE id IN ({placeholders})",
+        tuple(ingest_ids),
+    )
+
+
+def save_ingest_into_investigation(
+    investigation_id: str,
+    ingest_findings: dict,
+    *,
+    completed_at: str,
+    mark_authorized: bool = False,
+) -> None:
+    """Attach ingested records to an existing case in one transaction.
+
+    Only the ingest finding and ingest-tagged entities are replaced. Other
+    modules, the case target, and the existing summary stay as they were.
+    """
+    with get_db() as conn:
+        row = conn.execute(
+            "SELECT id, target FROM investigations WHERE id = ?",
+            (investigation_id,),
+        ).fetchone()
+        if row is None:
+            raise LookupError(investigation_id)
+
+        if mark_authorized:
+            conn.execute(
+                "UPDATE investigations SET completed_at = ?, authorized_use = 1 WHERE id = ?",
+                (completed_at, investigation_id),
+            )
+        else:
+            conn.execute(
+                "UPDATE investigations SET completed_at = ? WHERE id = ?",
+                (completed_at, investigation_id),
+            )
+
+        conn.execute(
+            "DELETE FROM findings WHERE investigation_id = ? AND module_name = ?",
+            (investigation_id, "ingest"),
+        )
+        conn.execute(
+            "INSERT INTO findings (investigation_id, module_name, data) VALUES (?, ?, ?)",
+            (investigation_id, "ingest", json.dumps(ingest_findings, default=str)),
+        )
+
+        _delete_ingest_entities(conn, investigation_id)
+        target_row = conn.execute(
+            "SELECT id FROM entities WHERE investigation_id = ? AND entity_type = ? AND value = ?",
+            (investigation_id, "target", row["target"]),
+        ).fetchone()
+        if target_row is None:
+            target_eid = conn.execute(
+                "INSERT INTO entities (investigation_id, entity_type, value, platform, confidence, metadata) VALUES (?, ?, ?, ?, ?, ?)",
+                (investigation_id, "target", row["target"], "", 1.0, "{}"),
+            ).lastrowid
+        else:
+            target_eid = target_row["id"]
+        _insert_ingest_entities(conn, investigation_id, target_eid, ingest_findings)
 
 
 def get_investigation(investigation_id: str) -> dict | None:

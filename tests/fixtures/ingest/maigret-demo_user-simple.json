@@ -1,0 +1,20 @@
+{
+  "Example": {
+    "username": "demo_user",
+    "url_main": "https://example.com/",
+    "url_user": "https://example.com/demo_user",
+    "http_status": 200,
+    "rank": 1,
+    "status": {
+      "username": "demo_user",
+      "site_name": "Example",
+      "url": "https://example.com/demo_user",
+      "status": "Claimed",
+      "ids": {"bio": "demo_user synthetic fixture"},
+      "tags": ["test"],
+      "keywords": [],
+      "keyword_match_status": "No Keywords"
+    },
+    "site": {"urlMain": "https://example.com/", "tags": ["test"]}
+  }
+}
