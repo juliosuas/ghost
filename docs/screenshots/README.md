@@ -6,12 +6,12 @@ Checked-in SVG captures used by the README:
 - `case-list.svg` — `ghost list`
 - `case-show.svg` — `ghost show <id-prefix>`
 
-## Demo GIF placeholder
+## Demo GIF
 
-A real terminal recording should be saved as:
-
-```
-docs/screenshots/demo.gif
-```
-
-That path is referenced from the README. **Do not commit a fake or generated placeholder GIF.** Capture it from the authorized [self-audit demo](../self-audit-demo.md) (`ghost doctor`, `ghost investigate … --no-ai --authorized`, `ghost list`).
+`demo.gif` shows `ghost import`, `ghost list`, `ghost show`, and `ghost export`
+against the synthetic sample case in `examples/` (`demo_user`, fake data only).
+Every frame is real CLI output, rendered by
+[`scripts/render_demo_gif.py`](../../scripts/render_demo_gif.py) so it can be
+regenerated after CLI changes. It does not run `ghost investigate`, which would
+send live HTTP probes; a screen recording of an authorized self-audit can
+replace it later.

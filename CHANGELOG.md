@@ -24,7 +24,7 @@ The package version in `pyproject.toml` is **0.1.0**. There is no GitHub release
 - Honest Ghost vs maigret comparison in Why Ghost (case files, provenance, multi-vector vs username-hunter coverage).
 - Synthetic sample case and report snippet under `examples/` (fake usernames/emails only).
 - Issue templates for good first issues and docs/questions.
-- Screenshot placeholder path `docs/screenshots/demo.gif` documented in `docs/screenshots/README.md` (GIF not committed).
+- Terminal demo GIF (`docs/screenshots/demo.gif`) of import/list/show/export on the synthetic sample case, reproducible with `scripts/render_demo_gif.py`.
 
 ### Changed
 
