@@ -7,6 +7,7 @@ body:
     attributes:
       value: |
         Ghost prioritizes defensible investigation workflows: authorization, provenance, case files, and repeatable reports.
+        New scraping modules and network parsers are out of scope. To propose an offline parser for another tool's output, use the New ingest parser template and attach a synthetic fixture (`demo_user`).
   - type: textarea
     id: problem
     attributes:
@@ -30,7 +31,7 @@ body:
         - API
         - Storage/case files
         - Report provenance
-        - OSINT module
+        - Offline ingest parser
         - Documentation/demo
         - Other
     validations:

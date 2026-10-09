@@ -6,7 +6,8 @@ body:
   - type: markdown
     attributes:
       value: |
-        Thanks for helping harden Ghost. Keep reports focused on authorized use cases and do not include private target data.
+        Thanks for helping harden Ghost. Keep reports focused on authorized investigations and self-audits.
+        Reproduction targets must be synthetic (`demo_user`) or your own authorized self-audit. Never include a real person.
   - type: textarea
     id: expected
     attributes:

@@ -236,23 +236,31 @@ curl -X POST http://127.0.0.1:5000/api/investigate \
 
 ## 🤝 Contributing
 
-Contributions are welcome! Here's how to get started:
+Contributions are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md), the [code of conduct](CODE_OF_CONDUCT.md), and [acceptable use](ACCEPTABLE_USE.md) before you open a pull request.
 
 1. **Fork** the repository
-2. **Create** a feature branch: `git checkout -b feature/amazing-module`
-3. **Commit** your changes: `git commit -m "Add amazing module"`
-4. **Push** to the branch: `git push origin feature/amazing-module`
+2. **Create** a feature branch
+3. **Commit** your changes
+4. **Push** to the branch
 5. **Open** a Pull Request
 
-CI runs Ruff and pytest on Python 3.10, 3.11, and 3.12. PRs should include proof plus screenshots or terminal output when user-facing behavior changes.
+CI runs Ruff and pytest on Python 3.10, 3.11, and 3.12. The pull request checklist covers tests, ruff, synthetic fixtures, no network in parsers, and docs updates.
 
-Good first issues and docs questions have templates under [`.github/ISSUE_TEMPLATE/`](.github/ISSUE_TEMPLATE/). Please do not include private target data.
+Use synthetic fixtures only (`demo_user`). Do not add scraping modules, network parsers, telemetry, or auto-update. Issue forms are in [`.github/ISSUE_TEMPLATE/`](.github/ISSUE_TEMPLATE/).
 
-### Areas We Need Help
+### Labels to create
 
-- 🌍 **New OSINT modules** — More platforms, more data sources
+Create these in the GitHub label settings. Do not create them through the API:
+
+- `good first issue`
+- `help wanted`
+- `parser`
+- `security`
+
+### Areas we need help
+
 - 🧪 **Testing** — Unit tests, integration tests, edge cases
-- 📝 **Documentation** — Guides, tutorials, API docs
+- 📝 **Documentation** — Guides and API docs that match the CLI
 - 🎨 **Dashboard UI** — First HTML frontend for the existing graph API
 - 🌐 **Translations** — i18n support for global users
 
@@ -262,6 +270,8 @@ Good first issues and docs questions have templates under [`.github/ISSUE_TEMPLA
 - [GitHub Issues](https://github.com/juliosuas/ghost/issues) — Bug reports & feature requests
 
 ## ⚠️ Legal Disclaimer
+
+See [ACCEPTABLE_USE.md](ACCEPTABLE_USE.md): authorized investigations and self-audits only.
 
 > **This tool is provided for authorized security research, journalism, law enforcement, and personal use only.**
 

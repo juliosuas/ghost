@@ -1,0 +1,48 @@
+name: New ingest parser
+description: Propose an offline parser for another tool's saved output. Not a scraper or network module.
+title: "parser: "
+labels: ["parser"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Ghost does not accept new scraping modules or network parsers.
+        Use this form to propose an offline ingest parser that reads a sample of another tool's output.
+        Attach a synthetic fixture only (`demo_user` or other invented data). Never attach output about a real person.
+  - type: input
+    id: tool_name
+    attributes:
+      label: Tool name
+      description: The external tool whose saved output Ghost would parse.
+      placeholder: example-osint-cli
+    validations:
+      required: true
+  - type: input
+    id: format_docs
+    attributes:
+      label: Link to its output format docs
+      description: Public documentation for that tool's output format.
+      placeholder: https://example.com/docs/output-format
+    validations:
+      required: true
+  - type: textarea
+    id: fixture
+    attributes:
+      label: Sample synthetic fixture
+      description: |
+        Attach a sample synthetic fixture to this issue, and paste a short excerpt here.
+        Use `demo_user` or other invented data. Do not include real people, real emails, phone numbers, or private reports.
+      placeholder: |
+        Attach the fixture file to this issue.
+        Excerpt:
+        {"target": "demo_user", "source": "example-tool"}
+    validations:
+      required: true
+  - type: checkboxes
+    id: authorized_synthetic
+    attributes:
+      label: Authorized use and synthetic data
+      description: Required. The parser must be for authorized use, and the sample must be synthetic.
+      options:
+        - label: I confirm this request is for authorized use only, and the sample is synthetic data only (`demo_user` or other invented data, never a real person).
+          required: true

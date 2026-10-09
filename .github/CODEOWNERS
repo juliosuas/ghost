@@ -1,0 +1,15 @@
+# Security-sensitive paths. Last matching pattern wins.
+#
+# API authentication is not a separate package. It lives in:
+# - ghost/backend/server.py
+#   Bearer and X-Ghost-Token gate (_extract_api_token, _tokens_match, _protect_api)
+# - ghost/core/config.py
+#   validate_secret_key, validate_api_token, validate_flask_runtime
+# Case-file authorized_use flags are product policy, not this gate.
+
+/ghost/core/doctor.py                         @juliosuas
+/ghost/backend/server.py                      @juliosuas
+/ghost/core/config.py                         @juliosuas
+/Dockerfile                                   @juliosuas
+/docker-compose*.yml                          @juliosuas
+/.github/workflows/                           @juliosuas
