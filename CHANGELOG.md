@@ -15,6 +15,9 @@ The package version in `pyproject.toml` is **0.1.0**. There is no GitHub release
 - In-memory rate limiting uses `RATE_LIMIT_REQUESTS` / `RATE_LIMIT_PERIOD` on `/api/*`.
 - CORS is restricted to localhost origins (not `*`).
 - Docker image runs as uid 1000, healthchecks use Python `urllib` (no curl on slim), and compose publishes `127.0.0.1` on the host.
+- Docker Compose stores investigations on the named volume `ghost_investigations`. A missing `./data` or `./investigations` host directory is not created as root, so uid 1000 can write.
+- The image build ignores `.env`, database files, and local `investigations/` so `COPY . .` cannot bake secrets or case data into the image.
+- Compose publishes `127.0.0.1:${GHOST_PORT:-5000}` to that same container port and sets `GHOST_PORT` in the container, so a `.env` port no longer leaves the app listening on a different port than the mapping. The obsolete Compose `version` key is removed.
 
 ### Added
 
