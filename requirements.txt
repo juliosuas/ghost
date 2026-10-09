@@ -53,7 +53,7 @@ folium>=0.15.1
 ipinfo>=5.0.1
 
 # Security
-cryptography>=41.0.7
+cryptography>=50.0.2
 certifi>=2023.11.17
 
 # Testing
