@@ -9,7 +9,7 @@ pydantic>=2.5.0
 # CLI
 rich>=13.7.0
 click>=8.1.7
-questionary>=2.0.1
+questionary>=2.1.1
 
 # Web Backend
 flask>=3.0.0
