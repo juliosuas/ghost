@@ -8,12 +8,13 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg?style=for-the-badge)](LICENSE)
 [![Platform](https://img.shields.io/badge/platform-linux%20%7C%20macos%20%7C%20windows-lightgrey.svg?style=for-the-badge)](#installation)
 [![CI](https://img.shields.io/github/actions/workflow/status/juliosuas/ghost/ci.yml?branch=main&style=for-the-badge&logo=githubactions&label=CI)](https://github.com/juliosuas/ghost/actions/workflows/ci.yml)
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/juliosuas/ghost/badge)](https://scorecard.dev/viewer/?uri=github.com/juliosuas/ghost)
 [![GitHub Stars](https://img.shields.io/github/stars/juliosuas/ghost?style=for-the-badge&logo=github)](https://github.com/juliosuas/ghost/stargazers)
 [![GitHub Issues](https://img.shields.io/github/issues/juliosuas/ghost?style=for-the-badge)](https://github.com/juliosuas/ghost/issues)
 
 **A local case-file workspace for authorized self-audits — SQLite storage, scope/authorization, and report provenance. Not a SaaS. Not an "AI platform."**
 
-[Quick Start](#-60-second-quick-start) · [Features](#-features) · [Installation](#-installation) · [Demo](docs/self-audit-demo.md) · [Roadmap](#-roadmap) · [Contributing](#-contributing)
+[Quick Start](#-60-second-quick-start) · [Features](#-features) · [Installation](#-installation) · [Demo](docs/self-audit-demo.md) · [Roadmap](#-roadmap) · [Contributing](#-contributing) · [Security](SECURITY.md)
 
 ---
 
@@ -286,7 +287,7 @@ Contributions are welcome! Here's how to get started:
 4. **Push** to the branch: `git push origin feature/amazing-module`
 5. **Open** a Pull Request
 
-CI runs Ruff and pytest on Python 3.10, 3.11, and 3.12. PRs should include proof plus screenshots or terminal output when user-facing behavior changes.
+CI runs Ruff and pytest on Python 3.10, 3.11, and 3.12, and pip-audit on Python 3.12. PRs should include proof plus screenshots or terminal output when user-facing behavior changes.
 
 Good first issues and docs questions have templates under [`.github/ISSUE_TEMPLATE/`](.github/ISSUE_TEMPLATE/). Please do not include private target data.
 
@@ -302,6 +303,7 @@ Good first issues and docs questions have templates under [`.github/ISSUE_TEMPLA
 
 - [GitHub Discussions](https://github.com/juliosuas/ghost/discussions) — Questions, ideas, show & tell
 - [GitHub Issues](https://github.com/juliosuas/ghost/issues) — Bug reports & feature requests
+- [Security](SECURITY.md) — Report vulnerabilities privately (Security tab → Report a vulnerability). Do not open a public issue.
 
 ## ⚠️ Legal Disclaimer
 
