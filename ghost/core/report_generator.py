@@ -23,6 +23,7 @@ def _template_dir() -> Path:
             return candidate
     return candidates[0]
 
+
 _MD_SPECIALS = set("\\`*_{}[]()#+-.!|>")
 
 

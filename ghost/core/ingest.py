@@ -11,7 +11,7 @@ Sherlock (`sherlock-project`)
     `exists` is a QueryStatus string: Claimed, Available, Unknown, Illegal, WAF.
     TXT from `--txt`: one profile URL per line, then
     `Total Websites Username Detected On : N` (N must match the URL count).
-    Console transcript (stdout, including ANSI SGR colors): 
+    Console transcript (stdout, including ANSI SGR colors):
     `[*] Checking username NAME on:`, `[+] Site: URL`, optional
     `[-] Site: reason` from `--print-all`, and
     `[*] Search completed with N results`. Lines after that footer are ignored.
@@ -171,9 +171,7 @@ def ingest_file(
     if existing is None and created_target is None:
         subject = parsed["subject"]
         if not subject:
-            raise IngestError(
-                f"{tool_name} report has no subject. Pass --case <id or name> to choose the case file"
-            )
+            raise IngestError(f"{tool_name} report has no subject. Pass --case <id or name> to choose the case file")
         created_target = subject
         input_type = parsed["input_type"]
     elif existing is None:
@@ -253,9 +251,7 @@ def _read_capped(path: Path) -> bytes:
         )
     data = path.read_bytes()
     if len(data) > MAX_INGEST_BYTES:
-        raise IngestError(
-            f"Refusing to import {path.name}: file grew past the {MAX_INGEST_BYTES} byte ingest limit"
-        )
+        raise IngestError(f"Refusing to import {path.name}: file grew past the {MAX_INGEST_BYTES} byte ingest limit")
     if not data:
         raise IngestError(f"{path.name} is empty")
     return data
@@ -429,9 +425,7 @@ def _parse_sherlock_txt(text: str) -> dict:
             raise IngestError(f"sherlock TXT: unrecognized line {index + 1}")
         urls.append(line)
     if total is not None and total != len(urls):
-        raise IngestError(
-            f"sherlock TXT: total says {total} websites but {len(urls)} URL lines were present"
-        )
+        raise IngestError(f"sherlock TXT: total says {total} websites but {len(urls)} URL lines were present")
     records = [
         {
             "source_format": "txt",
@@ -565,7 +559,9 @@ def _sherlock_json_row(item, where: str, site_name: str | None = None) -> dict:
         raise IngestError(f"{where}: url_main must be a string")
     http_status = item.get("http_status", "")
     if isinstance(http_status, bool) or (
-        http_status != "" and not isinstance(http_status, int) and not (isinstance(http_status, str) and http_status.isdigit())
+        http_status != ""
+        and not isinstance(http_status, int)
+        and not (isinstance(http_status, str) and http_status.isdigit())
     ):
         raise IngestError(f"{where}: http_status must be an integer, a digit string, or empty")
     response_time = item.get("response_time_s", "")
@@ -682,7 +678,11 @@ def _validate_maigret_record(obj, where: str, *, require_sitename: bool, site_ke
     if url_main is not None and not isinstance(url_main, str):
         raise IngestError(f"{where}: url_main must be a string")
     http_status = obj.get("http_status", None)
-    if http_status is not None and http_status != "" and (isinstance(http_status, bool) or not isinstance(http_status, int)):
+    if (
+        http_status is not None
+        and http_status != ""
+        and (isinstance(http_status, bool) or not isinstance(http_status, int))
+    ):
         raise IngestError(f"{where}: http_status must be an integer or empty")
     ids = status.get("ids", {})
     if ids is None:
