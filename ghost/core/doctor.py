@@ -8,16 +8,10 @@ import shutil
 from dataclasses import dataclass
 
 from ghost.backend.db import DB_PATH, get_connection, init_db, resolve_database_path
-from ghost.core.config import Config, config
+from ghost.core.config import Config, config, is_insecure_secret_key
 
-# Known insecure Flask/session defaults. Doctor fails if GHOST_SECRET_KEY is
-# missing or equals one of these (including the Config class default).
-INSECURE_SECRET_DEFAULTS = frozenset(
-    {
-        "ghost-dev-key",
-        "change-this-to-a-random-string",
-    }
-)
+# Length is doctor guidance only. Runtime startup must not reject a short key.
+_MIN_SECRET_KEY_LENGTH = 16
 
 # Doctor allows only loopback binds when GHOST_HOST is set. Unset is OK for CLI-only.
 ALLOWED_BIND_HOSTS = frozenset({"127.0.0.1", "localhost", "::1"})
@@ -54,13 +48,19 @@ def _secret_key_check() -> DoctorCheck:
             "(CLI-only investigate --authorized --no-ai does not need this)",
             "error",
         )
-    value = raw.strip()
-    if not value or value in INSECURE_SECRET_DEFAULTS:
+    if is_insecure_secret_key(raw):
         return DoctorCheck(
             "GHOST_SECRET_KEY",
             False,
             "insecure default or empty; refuse ghost-dev-key / example placeholders",
             "error",
+        )
+    if len(raw.strip()) < _MIN_SECRET_KEY_LENGTH:
+        return DoctorCheck(
+            "GHOST_SECRET_KEY",
+            False,
+            f"shorter than {_MIN_SECRET_KEY_LENGTH} characters; use a longer random value",
+            "warn",
         )
     return DoctorCheck("GHOST_SECRET_KEY", True, "set", "error")
 
