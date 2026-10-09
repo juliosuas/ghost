@@ -1,0 +1,5 @@
+[*] Checking username demo_user on:
+
+[+] Example: https://example.com/demo_user
+[-] Other: Not Found!
+[*] Search completed with 1 results

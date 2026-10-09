@@ -26,6 +26,7 @@ from ghost.backend.db import (
     list_investigations,
     save_investigation,
 )
+from ghost.core.ingest import IngestError, ingest_file
 
 console = Console()
 
@@ -74,7 +75,7 @@ def create_progress():
 @click.option("--type", "-T", "input_type", default="auto", help="Input type: username/email/phone/domain/image/auto")
 @click.option("--modules", "-m", help="Comma-separated modules to run")
 @click.option("--output", "-o", help="Output file path")
-@click.option("--format", "-f", "fmt", default="html", help="Report format: html/pdf/json")
+@click.option("--format", "-f", "fmt", default="html", help="Report format: html/pdf/json/markdown")
 @click.option("--no-ai", is_flag=True, help="Disable OpenAI calls and use deterministic heuristic analysis")
 @click.option(
     "--scope", default="authorized CLI investigation", help="Authorized scope/purpose recorded in report provenance"
@@ -106,7 +107,7 @@ def cli(ctx, target, input_type, modules, output, fmt, no_ai, scope, authorized)
 @click.option("--type", "-T", "input_type", default="auto")
 @click.option("--modules", "-m", help="Comma-separated modules")
 @click.option("--output", "-o")
-@click.option("--format", "-f", "fmt", default="html")
+@click.option("--format", "-f", "fmt", default="html", help="Report format: html/pdf/json/markdown")
 @click.option("--no-ai", is_flag=True, help="Disable OpenAI calls and use deterministic heuristic analysis")
 @click.option(
     "--scope", default="authorized CLI investigation", help="Authorized scope/purpose recorded in report provenance"
@@ -285,6 +286,43 @@ def import_case(case_file, replace):
     console.print(f"[green]Imported case[/green] {case_data['id']} [dim]from[/dim] {case_file}")
 
 
+@cli.command()
+@click.argument("source_file", metavar="FILE", type=click.Path(exists=True, dir_okay=False, path_type=Path))
+@click.option("--tool", type=click.Choice(["sherlock", "maigret", "holehe"]), required=True)
+@click.option(
+    "--case",
+    default=None,
+    help="Existing case id, unique id prefix, or target name. Unknown names create a case.",
+)
+@click.option(
+    "--scope", default="authorized tool ingest", show_default=True, help="Scope stored when a new case is created"
+)
+@click.option("--authorized", is_flag=True, help="Record the case as an authorized investigation")
+def ingest(source_file, tool, case, scope, authorized):
+    """Import a local Sherlock, Maigret, or Holehe report into a case file.
+
+    Reads the file only. Does not fetch URLs, spawn the other tool, or run investigate.
+    """
+    try:
+        result = ingest_file(
+            source_file,
+            tool,
+            case=case,
+            scope=scope,
+            authorized_use=authorized,
+        )
+    except IngestError as exc:
+        raise click.ClickException(f"{exc} Nothing was imported.") from exc
+
+    action = "Created case" if result.created else "Updated case"
+    console.print(
+        f"[green]{action}[/green] {result.investigation['id']} "
+        f"[dim]target[/dim] {result.investigation['target']} "
+        f"[dim]records[/dim] {result.imported_records} "
+        f"[dim]sha256[/dim] {result.source_sha256}"
+    )
+
+
 @cli.command(name="delete")
 @click.argument("investigation_id")
 @click.option("--yes", is_flag=True, help="Skip confirmation prompt")
@@ -373,7 +411,7 @@ def interactive_menu():
             mod_input = Prompt.ask("[green]Enter modules (comma-separated)")
             modules = [m.strip() for m in mod_input.split(",")]
 
-        fmt = Prompt.ask("[green]Report format", choices=["html", "pdf", "json"], default="html")
+        fmt = Prompt.ask("[green]Report format", choices=["html", "pdf", "json", "markdown"], default="html")
 
         if Confirm.ask(f"[green]Start investigation on [bold]{target}[/bold]?", default=True):
             run_investigation(target, input_type, modules, None, fmt)
