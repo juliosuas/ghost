@@ -66,7 +66,12 @@ def _extract_api_token() -> str:
 def _tokens_match(provided: str, expected: str) -> bool:
     if not provided or not expected:
         return False
-    return hmac.compare_digest(provided, expected)
+    try:
+        provided_bytes = provided.encode("utf-8")
+        expected_bytes = expected.encode("utf-8")
+    except (UnicodeEncodeError, UnicodeError):
+        return False
+    return hmac.compare_digest(provided_bytes, expected_bytes)
 
 
 def _client_key() -> str:
