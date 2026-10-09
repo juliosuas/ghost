@@ -13,7 +13,7 @@
 
 **A local case-file workspace for authorized self-audits — SQLite storage, scope/authorization, and report provenance. Not a SaaS. Not an "AI platform."**
 
-[Quick Start](#-60-second-quick-start) · [Features](#-features) · [Installation](#-installation) · [Demo](docs/self-audit-demo.md) · [Roadmap](#-roadmap) · [Contributing](#-contributing)
+[Quick Start](#-60-second-quick-start) · [Features](#-features) · [Installation](#-installation) · [Demo](docs/self-audit-demo.md) · [Scope](#-scope) · [Contributing](#-contributing)
 
 ---
 
@@ -164,10 +164,14 @@ SQLite by default instead of JSON files. This gives local users durable,
 queryable storage without requiring a separate database server.
 
 ```env
-DATABASE_URL=sqlite:///./ghost/data/ghost.db
+DATABASE_URL=sqlite:///ghost.db
 ```
 
-PostgreSQL is on the roadmap behind the storage adapter boundary. For now,
+Relative SQLite paths resolve under `ghost/data/`, so the line above stores the
+database at `ghost/data/ghost.db` (same as `.env.example`). Use an absolute path
+such as `sqlite:////home/me/ghost.db` to store it elsewhere.
+
+PostgreSQL is not supported; it stays behind the storage adapter boundary. For now,
 non-SQLite `DATABASE_URL` values fail explicitly so deployments do not silently
 write data to the wrong place.
 
@@ -223,16 +227,15 @@ curl -X POST http://127.0.0.1:5000/api/investigate \
 └── tests/           # pytest suite (CI)
 ```
 
-## 🗺️ Roadmap
+## 🧭 Scope
 
-- [ ] **Plugin System** — Drop-in custom modules with standard interface
-- [ ] **Geospatial Timeline** — Map-based activity visualization over time
-- [ ] **Team Collaboration** — Multi-user investigations with shared workspaces
-- [ ] **Telegram Bot** — Run investigations from Telegram
-- [ ] **Export to STIX/TAXII** — Threat intelligence format compatibility
-- [ ] **Graph Database** — Neo4j backend for complex relationship mapping
-- [ ] **Mobile App** — iOS/Android companion for field investigations
-- [ ] **Scheduled Monitoring** — Continuous target monitoring with alerts
+Ghost is a local, single-user case-file tool for authorized self-audits. The
+earlier product wishlist (plugin system, geospatial timeline, team
+collaboration, Telegram bot, STIX/TAXII export, graph database, mobile app,
+scheduled monitoring) is **out of scope** and is not being worked on.
+
+Welcome work: reliability, tests, documentation, and honest calibration of the
+existing collectors.
 
 ## 🤝 Contributing
 
@@ -250,11 +253,8 @@ Good first issues and docs questions have templates under [`.github/ISSUE_TEMPLA
 
 ### Areas We Need Help
 
-- 🌍 **New OSINT modules** — More platforms, more data sources
-- 🧪 **Testing** — Unit tests, integration tests, edge cases
-- 📝 **Documentation** — Guides, tutorials, API docs
-- 🎨 **Dashboard UI** — First HTML frontend for the existing graph API
-- 🌐 **Translations** — i18n support for global users
+- 🧪 **Testing** — Unit tests, integration tests, edge cases for existing modules
+- 📝 **Documentation** — Self-audit guides and examples (synthetic data only)
 
 ## 💬 Community
 

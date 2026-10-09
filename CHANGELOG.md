@@ -34,6 +34,11 @@ The package version in `pyproject.toml` is **0.1.0**. There is no GitHub release
 
 - README install path: editable source install is supported; `pip install ghost-osint` is marked unpublished (PyPI 404).
 - README claims calibrated to the current CLI: OpenAI is optional, dashboard HTML is not shipped, PDF needs `weasyprint`, username coverage is 70 built-in HTTP checks plus optional Sherlock.
+- README roadmap replaced with an explicit out-of-scope note; "Areas We Need Help" narrowed to testing and self-audit docs (no new modules, dashboard, or translations).
+
+### Fixed
+
+- README SQLite example `sqlite:///./ghost/data/ghost.db` resolved to `/ghost/data/ghost.db` at the filesystem root. It now uses `sqlite:///ghost.db` (stored at `ghost/data/ghost.db`), matching `.env.example`.
 
 ### Notes for the next tag
 
