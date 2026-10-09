@@ -328,7 +328,13 @@ def _insert_ingest_entities(conn, investigation_id: str, target_eid: int, ingest
 
 
 def _delete_ingest_entities(conn, investigation_id: str) -> None:
-    """Remove entities previously written by ingest so a re-save does not duplicate them."""
+    """Remove entities previously written by ingest so a re-save does not duplicate them.
+
+    Relationships that point at those entities are deleted first. With
+    foreign_keys=ON, deleting the entity while a relationship still references
+    it fails unless the schema cascade runs; removing the rows explicitly
+    keeps the second ingest working either way.
+    """
     rows = conn.execute(
         "SELECT id, metadata FROM entities WHERE investigation_id = ?",
         (investigation_id,),
@@ -341,8 +347,17 @@ def _delete_ingest_entities(conn, investigation_id: str) -> None:
             continue
         if isinstance(metadata, dict) and "ingest_tool" in metadata:
             ingest_ids.append(row["id"])
-    for entity_id in ingest_ids:
-        conn.execute("DELETE FROM entities WHERE id = ?", (entity_id,))
+    if not ingest_ids:
+        return
+    placeholders = ",".join("?" * len(ingest_ids))
+    conn.execute(
+        f"DELETE FROM relationships WHERE source_entity_id IN ({placeholders}) OR target_entity_id IN ({placeholders})",
+        (*ingest_ids, *ingest_ids),
+    )
+    conn.execute(
+        f"DELETE FROM entities WHERE id IN ({placeholders})",
+        tuple(ingest_ids),
+    )
 
 
 def save_ingest_into_investigation(
