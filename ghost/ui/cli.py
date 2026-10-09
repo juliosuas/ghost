@@ -294,7 +294,9 @@ def import_case(case_file, replace):
     default=None,
     help="Existing case id, unique id prefix, or target name. Unknown names create a case.",
 )
-@click.option("--scope", default="authorized tool ingest", show_default=True, help="Scope stored when a new case is created")
+@click.option(
+    "--scope", default="authorized tool ingest", show_default=True, help="Scope stored when a new case is created"
+)
 @click.option("--authorized", is_flag=True, help="Record the case as an authorized investigation")
 def ingest(source_file, tool, case, scope, authorized):
     """Import a local Sherlock, Maigret, or Holehe report into a case file.
