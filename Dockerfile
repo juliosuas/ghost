@@ -34,6 +34,6 @@ ENV GHOST_HOME=/app/ghost
 ENV GHOST_HOST=0.0.0.0
 
 HEALTHCHECK --interval=30s --timeout=10s --retries=3 \
-    CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:5000/api/health')"
+    CMD python -c "import os, urllib.request; port=os.environ.get('GHOST_PORT') or '5000'; urllib.request.urlopen('http://127.0.0.1:' + port + '/api/health')"
 
 CMD ["python", "-m", "ghost.backend.server"]

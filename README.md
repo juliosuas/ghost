@@ -150,7 +150,8 @@ git clone https://github.com/juliosuas/ghost.git
 cd ghost
 cp .env.example .env   # set GHOST_SECRET_KEY and GHOST_API_TOKEN; required by env_file
 docker-compose up -d
-# REST API → http://127.0.0.1:5000  (published on loopback only; dashboard HTML is not shipped)
+# REST API → http://127.0.0.1:5000 by default (loopback only; dashboard HTML is not shipped)
+# If .env sets GHOST_PORT, the host and the container both use that port.
 ```
 
 The image sets `GHOST_HOME=/app/ghost`. Compose persists that home with named volumes `ghost_data` (`/app/ghost/data`) and `ghost_investigations` (`/app/ghost/investigations`). Those are not host binds: if `./data` or `./investigations` is missing, Docker would create it as root and uid 1000 could not write.
