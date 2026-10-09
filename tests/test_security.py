@@ -311,3 +311,20 @@ class TestEnvAndComposeDefaults:
         assert "127.0.0.1:${GHOST_PORT:-5000}:5000" in text
         assert '"0.0.0.0:' not in text
         assert "urllib.request" in text
+
+    def test_compose_volumes_match_runtime_data_paths(self):
+        root = Path(__file__).resolve().parents[1]
+        compose = (root / "docker-compose.yml").read_text(encoding="utf-8")
+        dockerfile = (root / "Dockerfile").read_text(encoding="utf-8")
+        # feat/ghost-home writes under GHOST_HOME. The image sets that to
+        # /app/ghost, so these are the container paths, not package-relative ones.
+        assert "ENV GHOST_HOME=/app/ghost" in dockerfile
+        assert 'GHOST_HOME: "/app/ghost"' in compose
+        assert "ghost_data:/app/ghost/data" in compose
+        assert "./investigations:/app/ghost/investigations" in compose
+        assert ":/app/data" not in compose
+        assert ":/app/investigations" not in compose
+        assert "/app/ghost/data" in dockerfile
+        assert "/app/ghost/investigations" in dockerfile
+        assert 'user: "1000:1000"' in compose
+        assert "127.0.0.1:${GHOST_PORT:-5000}:5000" in compose
