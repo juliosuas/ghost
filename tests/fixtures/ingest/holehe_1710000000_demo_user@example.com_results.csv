@@ -1,0 +1,3 @@
+name,domain,method,frequent_rate_limit,rateLimit,exists,emailrecovery,phoneNumber,others
+example,example.com,register,False,False,True,,,{'FullName': 'Demo'}
+other,example.org,register,True,False,False,,,

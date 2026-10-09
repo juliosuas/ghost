@@ -78,7 +78,7 @@ A terminal demo GIF belongs at [`docs/screenshots/demo.gif`](docs/screenshots/de
 
 - 📄 **Reports** — HTML and JSON always; PDF when the optional `weasyprint` extra is installed
 - 🗺️ **Entity graph API** — D3-compatible JSON at `/api/investigation/<id>/graph` (dashboard HTML is not shipped yet)
-- 🖥️ **CLI** — Rich interface, `ghost doctor`, and case-file commands (`list`, `show`, `export`, `import`, `delete`)
+- 🖥️ **CLI** — Rich interface, `ghost doctor`, and case-file commands (`list`, `show`, `export`, `import`, `ingest`, `delete`)
 - 🔌 **REST API** — Flask at `python -m ghost.backend.server` (loopback by default). Case-data routes require `GHOST_API_TOKEN`; `authorized_use: true` is still required as case-file policy.
 
 ## ⚡ 60-second Quick Start
@@ -206,6 +206,26 @@ curl -X POST http://127.0.0.1:5000/api/investigate \
   -H "Authorization: Bearer $GHOST_API_TOKEN" \
   -d '{"target": "demo_user", "input_type": "username", "authorized_use": true, "scope": "authorized self-audit"}'
 ```
+
+## Ingest results from other tools
+
+Sherlock finds accounts. Ghost turns them into a case file you can defend. For an authorized self-audit, or another investigation you are allowed to run, import a **local** report:
+
+```bash
+python3 -m ghost ingest sherlock-demo_user.csv --tool sherlock --authorized --scope "authorized self-audit"
+python3 -m ghost ingest maigret-demo_user_simple.json --tool maigret --case demo_user
+python3 -m ghost ingest holehe_1710000000_demo_user@example.com_results.csv --tool holehe --case demo_user@example.com
+```
+
+`ghost ingest` does not contact the network, launch the other tool, or run `investigate`. Files over 50 MB are refused before they are read. Invalid files import nothing (one database transaction). Each record stores the tool name, tool version when the file has one, the UTC ingest time, the SHA-256 of the file, and the URL exactly as written.
+
+| Tool | What Ghost accepts |
+|---|---|
+| Sherlock | `--csv` (`username,name,url_main,url_user,exists,http_status,response_time_s`; `exists` is Claimed / Available / Unknown / Illegal / WAF). `--txt` (one URL per line, then `Total Websites Username Detected On : N`). A console transcript (`[*] Checking username …`, `[+] Site: URL`, `[*] Search completed with N results`), including ANSI colors. A JSON array of those CSV rows, or a site-keyed object with the same fields. Sherlock's `--json` flag loads a site manifest and is rejected. These files do not include a tool version. |
+| Maigret | `--json simple` (one object keyed by site) and `--json ndjson` (one claimed site per line, with `sitename`). Rows must be `Claimed`, which is all Maigret writes. No tool version in the file. |
+| Holehe | `--csv` columns `name,domain,method,frequent_rate_limit,rateLimit,exists,emailrecovery,phoneNumber,others`, or the error-row header that includes `error`. Booleans are `True` / `False`. The email is not a column: pass `--case`, or keep Holehe's `holehe_<timestamp>_<email>_results.csv` name. No tool version in the file. |
+
+HTML and Markdown reports escape every imported field. Profile links are rendered only for `http` and `https` URLs; the stored URL is not rewritten. `ghost investigate --format markdown` writes the Markdown report.
 
 ## 🏗️ Architecture
 
