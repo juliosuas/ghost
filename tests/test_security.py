@@ -5,12 +5,14 @@ from pathlib import Path
 import pytest
 
 from ghost.core.config import (
+    INSECURE_SECRET_DEFAULTS,
     Config,
     is_insecure_secret_key,
     validate_api_token,
     validate_flask_runtime,
     validate_secret_key,
 )
+from ghost.core.doctor import has_error, run_doctor_checks
 from ghost.core.investigator import Investigation
 from ghost.backend.db import save_investigation
 from ghost.backend import server as server_mod
@@ -123,6 +125,23 @@ class TestApiTokenAndCors:
         )
         assert response.status_code == 401
 
+    def test_non_ascii_token_is_unauthorized(self, api_client):
+        for token in ("tökën", "\ud800"):
+            response = api_client.get(
+                "/api/investigations",
+                headers={"X-Ghost-Token": token},
+            )
+            assert response.status_code == 401
+            assert response.get_json()["error"] == "unauthorized"
+
+    def test_valid_token_still_passes(self, api_client):
+        response = api_client.get(
+            "/api/investigations",
+            headers={"X-Ghost-Token": _TEST_API_TOKEN},
+        )
+        assert response.status_code == 200
+        assert response.get_json() == []
+
     def test_x_ghost_token_allows_read(self, api_client):
         response = api_client.get(
             "/api/investigations",
@@ -214,6 +233,69 @@ class TestApiRateLimit:
 
         assert client.get("/api/health").status_code == 200
         assert client.get("/api/health").status_code == 200
+
+
+class TestSharedInsecureSecretBlacklist:
+    @pytest.mark.parametrize(
+        "secret",
+        sorted(INSECURE_SECRET_DEFAULTS) + ["GHOST-DEV-KEY", "ChangeMe", "SECRET", "", "   "],
+    )
+    def test_doctor_and_runtime_agree_on_insecure_values(self, monkeypatch, secret):
+        assert is_insecure_secret_key(secret) is True
+
+        cfg = Config()
+        cfg.debug = False
+        cfg.secret_key = secret
+        cfg.api_token = "ok-token"
+        with pytest.raises(ValueError, match="GHOST_SECRET_KEY"):
+            validate_flask_runtime(cfg)
+
+        monkeypatch.setenv("GHOST_SECRET_KEY", secret)
+        monkeypatch.setenv("GHOST_API_TOKEN", "unit-test-api-token")
+        monkeypatch.delenv("GHOST_HOST", raising=False)
+        checks = run_doctor_checks()
+        found = next(item for item in checks if item.name == "GHOST_SECRET_KEY")
+        assert found.ok is False
+        assert found.severity == "error"
+        assert has_error(checks) is True
+
+    def test_short_key_warns_in_doctor_but_runtime_starts(self, monkeypatch):
+        short = "short-key-12345"
+        assert len(short) < 16
+        assert is_insecure_secret_key(short) is False
+
+        cfg = Config()
+        cfg.debug = False
+        cfg.secret_key = short
+        cfg.api_token = "ok-token"
+        validate_flask_runtime(cfg)
+
+        monkeypatch.setattr(server_mod.config, "debug", False)
+        monkeypatch.setattr(server_mod.config, "secret_key", short)
+        monkeypatch.setattr(server_mod.config, "api_token", "ok-token")
+        monkeypatch.setattr(server_mod.config, "host", "127.0.0.1")
+        monkeypatch.setattr(server_mod.config, "port", 5000)
+        started: dict = {}
+
+        def _run(**kwargs):
+            started.update(kwargs)
+
+        monkeypatch.setattr(server_mod.app, "run", _run)
+        server_mod.main()
+        assert started["host"] == "127.0.0.1"
+        assert server_mod.app.secret_key == short
+
+        monkeypatch.setenv("GHOST_SECRET_KEY", short)
+        monkeypatch.setenv("GHOST_API_TOKEN", "unit-test-api-token")
+        monkeypatch.setenv("GHOST_HOST", "127.0.0.1")
+        checks = run_doctor_checks()
+        found = next(item for item in checks if item.name == "GHOST_SECRET_KEY")
+        assert found.ok is False
+        assert found.severity == "warn"
+        assert "shorter than 16" in found.detail
+        assert has_error(checks) is False
+        summary_ok = not any(not item.ok and item.severity == "error" for item in checks)
+        assert summary_ok is True
 
 
 class TestEnvAndComposeDefaults:
