@@ -1,4 +1,9 @@
-"""Ghost configuration management."""
+"""Ghost configuration management.
+
+Importing this module calls :func:`ghost.core.paths.prepare_storage` as a side
+effect. That creates the private home (mode 0700) and may copy a legacy
+in-package database before anything else uses those paths.
+"""
 
 import os
 from dataclasses import dataclass, field

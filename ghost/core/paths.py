@@ -16,6 +16,7 @@ from __future__ import annotations
 import logging
 import os
 import shutil
+import sqlite3
 import stat
 from collections.abc import Mapping
 from dataclasses import dataclass
@@ -165,11 +166,90 @@ def ensure_private_dir(path: Path) -> None:
     _chmod(path, DIR_MODE)
 
 
+def ensure_private_home(path: Path) -> None:
+    """Create the GHOST_HOME directory at mode 0700.
+
+    A failed chmod, or a directory owned by someone else, is logged and does
+    not abort startup. Importing config calls :func:`prepare_storage`, which
+    calls this.
+    """
+    path.mkdir(parents=True, exist_ok=True)
+    try:
+        os.chmod(path, DIR_MODE)
+    except OSError as exc:
+        logger.warning("Could not set mode 0700 on GHOST_HOME %s: %s", path, exc)
+    getuid = getattr(os, "getuid", None)
+    if getuid is None:
+        return
+    try:
+        owner = path.stat().st_uid
+    except OSError as exc:
+        logger.warning("Could not stat GHOST_HOME %s: %s", path, exc)
+        return
+    if owner != getuid():
+        logger.warning("GHOST_HOME %s is not owned by the current user (uid %s)", path, getuid())
+
+
 def restrict_db_file(path: Path) -> None:
     """Force an on-disk database file to mode 0600."""
     if str(path) == ":memory:" or not path.exists():
         return
     _chmod(path, DB_MODE)
+
+
+def _backup_sqlite(legacy: Path, temporary: Path) -> None:
+    """Consistent snapshot, including uncheckpointed WAL frames."""
+    source = sqlite3.connect(legacy)
+    try:
+        target = sqlite3.connect(temporary)
+        try:
+            source.backup(target)
+        finally:
+            target.close()
+    finally:
+        source.close()
+
+
+def _copy_exclusive(temporary: Path, dest: Path) -> bool:
+    """Copy ``temporary`` onto a new ``dest``. Never overwrite an existing file."""
+    fd = -1
+    created = False
+    try:
+        fd = os.open(dest, os.O_CREAT | os.O_EXCL | os.O_WRONLY, DB_MODE)
+        created = True
+        with temporary.open("rb") as src, os.fdopen(fd, "wb") as out:
+            fd = -1
+            shutil.copyfileobj(src, out)
+        return True
+    except FileExistsError:
+        return False
+    except OSError as exc:
+        logger.warning(
+            "Could not migrate legacy Ghost database to %s (%s); left the original in place",
+            dest,
+            exc,
+        )
+        if created:
+            dest.unlink(missing_ok=True)
+        return False
+    finally:
+        if fd >= 0:
+            os.close(fd)
+
+
+def _install_backup(temporary: Path, dest: Path) -> bool:
+    """Publish ``temporary`` as ``dest`` without overwriting.
+
+    Hardlink when the filesystem allows it. Otherwise exclusive-create and
+    copy. A failure is logged by the copy fallback and does not raise.
+    """
+    try:
+        os.link(temporary, dest)
+        return True
+    except FileExistsError:
+        return False
+    except OSError:
+        return _copy_exclusive(temporary, dest)
 
 
 def migrate_legacy_database(
@@ -180,9 +260,11 @@ def migrate_legacy_database(
 ) -> bool:
     """Copy the legacy in-package database to ``dest``.
 
+    Uses the SQLite backup API so uncheckpointed WAL frames are included.
     Copies, never moves. Runs only when ``dest`` does not exist and
     ``DATABASE_URL`` is unset. Never overwrites. Leaves the old file in place
-    and logs once when a copy is made.
+    and logs once when a copy is made. Backup or publish failures are logged
+    and do not raise.
     """
     if database_url is None:
         database_url = os.environ.get("DATABASE_URL", "")
@@ -202,19 +284,24 @@ def migrate_legacy_database(
 
     ensure_private_dir(dest.parent)
     temporary = dest.with_name(f".{dest.name}.migrating")
-    linked = False
+    published = False
     try:
-        shutil.copyfile(legacy, temporary)
-        os.chmod(temporary, DB_MODE)
         try:
-            os.link(temporary, dest)
-            linked = True
-        except FileExistsError:
+            _backup_sqlite(legacy, temporary)
+            os.chmod(temporary, DB_MODE)
+            published = _install_backup(temporary, dest)
+        except (OSError, sqlite3.Error) as exc:
+            logger.warning(
+                "Could not migrate legacy Ghost database from %s to %s: %s",
+                legacy,
+                dest,
+                exc,
+            )
             return False
     finally:
         temporary.unlink(missing_ok=True)
 
-    if not linked:
+    if not published:
         return False
 
     os.chmod(dest, DB_MODE)
@@ -226,10 +313,36 @@ def migrate_legacy_database(
     return True
 
 
+def legacy_reports_warning() -> str | None:
+    """Describe in-package investigation files that this migration does not copy."""
+    legacy_dir = PACKAGE_DIR / "investigations"
+    if not legacy_dir.is_dir():
+        return None
+    if not any(path.is_file() for path in legacy_dir.rglob("*")):
+        return None
+    return f"legacy reports remain in {legacy_dir} and were not migrated"
+
+
+def relative_ghost_home_warning(environ: Mapping[str, str] | None = None) -> str | None:
+    """Warn when GHOST_HOME is relative and therefore depends on the cwd."""
+    raw = _env_value(_environ(environ), "GHOST_HOME")
+    if not raw:
+        return None
+    expanded = Path(raw).expanduser()
+    if expanded.is_absolute():
+        return None
+    return f"{raw} is relative and resolves against the current working directory ({Path.cwd()})"
+
+
 def prepare_storage(environ: Mapping[str, str] | None = None) -> GhostLayout:
-    """Create the private home tree and copy a legacy database when allowed."""
+    """Create the private home tree and copy a legacy database when allowed.
+
+    Importing :mod:`ghost.core.config` calls this as a side effect, before the
+    database layer or CLI runs. Permission and migration failures are logged
+    and do not raise.
+    """
     layout = resolve_layout(environ)
-    ensure_private_dir(layout.home)
+    ensure_private_home(layout.home)
     ensure_private_dir(layout.data_dir)
     ensure_private_dir(layout.investigations_dir)
     if layout.source != _SOURCE_DATABASE_URL and str(layout.database_path) != ":memory:":

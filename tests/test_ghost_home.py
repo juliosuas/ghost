@@ -2,16 +2,18 @@
 
 from __future__ import annotations
 
+import errno
 import json
 import logging
 import os
+import sqlite3
 import stat
 from pathlib import Path
 
 import pytest
 
 from ghost.backend.db import init_db
-from ghost.core.doctor import run_doctor_checks
+from ghost.core.doctor import has_error, run_doctor_checks
 from ghost.core.paths import (
     data_path_doctor_detail,
     migrate_legacy_database,
@@ -115,11 +117,24 @@ class TestPermissions:
         assert mode_bits(layout.data_dir) == 0o700
 
 
+def _marker(path: Path) -> str | None:
+    conn = sqlite3.connect(path)
+    try:
+        row = conn.execute("SELECT value FROM marker").fetchone()
+    finally:
+        conn.close()
+    return None if row is None else row[0]
+
+
 class TestLegacyMigration:
     def _legacy(self, root: Path) -> Path:
         legacy = root / "package" / "data" / "ghost.db"
         legacy.parent.mkdir(parents=True)
-        legacy.write_bytes(b"legacy-sqlite")
+        conn = sqlite3.connect(legacy)
+        conn.execute("CREATE TABLE marker (value TEXT)")
+        conn.execute("INSERT INTO marker (value) VALUES ('legacy-sqlite')")
+        conn.commit()
+        conn.close()
         os.chmod(legacy, 0o644)
         return legacy
 
@@ -135,12 +150,75 @@ class TestLegacyMigration:
         source_inode = legacy.stat().st_ino
         layout = prepare_storage({"GHOST_HOME": str(home)})
 
-        assert layout.database_path.read_bytes() == b"legacy-sqlite"
-        assert legacy.read_bytes() == b"legacy-sqlite"
+        assert _marker(layout.database_path) == "legacy-sqlite"
+        assert _marker(legacy) == "legacy-sqlite"
         assert legacy.stat().st_ino == source_inode
         assert legacy.stat().st_ino != layout.database_path.stat().st_ino
         assert mode_bits(legacy) == 0o644
         assert mode_bits(layout.database_path) == 0o600
+
+    def test_backup_includes_uncheckpointed_wal_row(self, isolated_env, monkeypatch):
+        legacy = isolated_env / "package" / "data" / "ghost.db"
+        legacy.parent.mkdir(parents=True)
+        writer = sqlite3.connect(legacy)
+        writer.execute("PRAGMA journal_mode=WAL")
+        writer.execute("CREATE TABLE marker (value TEXT)")
+        writer.execute("INSERT INTO marker (value) VALUES ('wal-only')")
+        writer.commit()
+        wal = Path(str(legacy) + "-wal")
+        assert wal.exists()
+        assert wal.stat().st_size > 0
+        main_only = isolated_env / "main-only.db"
+        main_only.write_bytes(legacy.read_bytes())
+        untouched = sqlite3.connect(main_only)
+        try:
+            with pytest.raises(sqlite3.OperationalError):
+                untouched.execute("SELECT value FROM marker").fetchone()
+        finally:
+            untouched.close()
+
+        monkeypatch.setattr("ghost.core.paths.LEGACY_DB_PATH", legacy)
+        try:
+            layout = prepare_storage({"GHOST_HOME": str(isolated_env / "home")})
+            assert _marker(layout.database_path) == "wal-only"
+            assert legacy.exists()
+            assert _marker(legacy) == "wal-only"
+        finally:
+            writer.close()
+
+    @pytest.mark.parametrize("err", [errno.EPERM, errno.ENOTSUP])
+    def test_link_oserror_falls_back_to_exclusive_copy(self, isolated_env, monkeypatch, err):
+        legacy = self._legacy(isolated_env)
+        monkeypatch.setattr("ghost.core.paths.LEGACY_DB_PATH", legacy)
+
+        def no_link(*_args, **_kwargs):
+            raise OSError(err, os.strerror(err))
+
+        monkeypatch.setattr("ghost.core.paths.os.link", no_link)
+        layout = prepare_storage({"GHOST_HOME": str(isolated_env / "home")})
+        assert _marker(layout.database_path) == "legacy-sqlite"
+        assert _marker(legacy) == "legacy-sqlite"
+        assert legacy.stat().st_ino != layout.database_path.stat().st_ino
+
+    def test_link_and_exclusive_copy_failure_does_not_crash(self, isolated_env, monkeypatch, caplog):
+        legacy = self._legacy(isolated_env)
+        monkeypatch.setattr("ghost.core.paths.LEGACY_DB_PATH", legacy)
+
+        def no_link(*_args, **_kwargs):
+            raise OSError(errno.EPERM, "Operation not permitted")
+
+        def no_open(*_args, **_kwargs):
+            raise OSError(errno.ENOTSUP, "Operation not supported")
+
+        monkeypatch.setattr("ghost.core.paths.os.link", no_link)
+        monkeypatch.setattr("ghost.core.paths.os.open", no_open)
+        home = isolated_env / "home"
+        with caplog.at_level(logging.WARNING, logger="ghost.core.paths"):
+            layout = prepare_storage({"GHOST_HOME": str(home)})
+        assert layout.home == home
+        assert not layout.database_path.exists()
+        assert _marker(legacy) == "legacy-sqlite"
+        assert any("Could not migrate" in record.getMessage() for record in caplog.records)
 
     def test_logs_once(self, isolated_env, monkeypatch, caplog):
         legacy = self._legacy(isolated_env)
@@ -168,7 +246,7 @@ class TestLegacyMigration:
             layout = prepare_storage({"GHOST_HOME": str(home)})
 
         assert layout.database_path.read_bytes() == b"keep-me"
-        assert legacy.read_bytes() == b"legacy-sqlite"
+        assert _marker(legacy) == "legacy-sqlite"
         assert legacy.exists()
         assert caplog.records == []
 
@@ -189,7 +267,7 @@ class TestLegacyMigration:
         assert layout.source == "DATABASE_URL"
         assert not database.exists()
         assert not (home / "data" / "ghost.db").exists()
-        assert legacy.read_bytes() == b"legacy-sqlite"
+        assert _marker(legacy) == "legacy-sqlite"
         assert caplog.records == []
 
     def test_migrate_helper_skips_when_database_url_set(self, isolated_env):
@@ -208,7 +286,7 @@ class TestLegacyMigration:
         legacy = self._legacy(isolated_env)
         copied = migrate_legacy_database(legacy, database_url="", legacy_path=legacy)
         assert copied is False
-        assert legacy.read_bytes() == b"legacy-sqlite"
+        assert _marker(legacy) == "legacy-sqlite"
 
 
 class TestDoctorDataPath:
@@ -244,3 +322,62 @@ class TestDoctorDataPath:
         payload = json.loads(result.output)
         detail = next(item["detail"] for item in payload["checks"] if item["name"] == "data path")
         assert detail == f"{home / 'data'} (GHOST_HOME)"
+
+
+class TestStartupWarnings:
+    def test_chmod_failure_warns_and_continues(self, isolated_env, monkeypatch, caplog):
+        def boom(_path, _mode):
+            raise OSError(errno.EPERM, "Operation not permitted")
+
+        monkeypatch.setattr("ghost.core.paths.os.chmod", boom)
+        home = isolated_env / "home"
+        with caplog.at_level(logging.WARNING, logger="ghost.core.paths"):
+            layout = prepare_storage({"GHOST_HOME": str(home)})
+        assert layout.home == home
+        assert home.is_dir()
+        assert any("Could not set mode 0700 on GHOST_HOME" in record.getMessage() for record in caplog.records)
+
+    def test_unowned_home_warns_and_continues(self, isolated_env, monkeypatch, caplog):
+        current_uid = os.getuid()
+        monkeypatch.setattr("ghost.core.paths.os.getuid", lambda: current_uid + 1)
+        home = isolated_env / "home"
+        with caplog.at_level(logging.WARNING, logger="ghost.core.paths"):
+            layout = prepare_storage({"GHOST_HOME": str(home)})
+        assert layout.home == home
+        assert any("is not owned by the current user" in record.getMessage() for record in caplog.records)
+
+    def test_doctor_warns_when_legacy_reports_exist(self, isolated_env, monkeypatch, tmp_path):
+        package = tmp_path / "pkg"
+        report = package / "investigations" / "abc" / "report.html"
+        report.parent.mkdir(parents=True)
+        report.write_text("old", encoding="utf-8")
+        monkeypatch.setattr("ghost.core.paths.PACKAGE_DIR", package)
+        checks = run_doctor_checks()
+        warning = _check(checks, "legacy reports")
+        assert warning.ok is False
+        assert warning.severity == "warn"
+        assert str(package / "investigations") in warning.detail
+        assert "not migrated" in warning.detail
+
+    def test_doctor_ignores_empty_legacy_reports_dir(self, isolated_env, monkeypatch, tmp_path):
+        package = tmp_path / "pkg"
+        (package / "investigations").mkdir(parents=True)
+        monkeypatch.setattr("ghost.core.paths.PACKAGE_DIR", package)
+        checks = run_doctor_checks()
+        assert all(item.name != "legacy reports" for item in checks)
+
+    def test_doctor_warns_when_ghost_home_is_relative(self, isolated_env, monkeypatch):
+        monkeypatch.chdir(isolated_env)
+        monkeypatch.setenv("GHOST_HOME", "relative-home")
+        checks = run_doctor_checks()
+        warning = _check(checks, "GHOST_HOME")
+        assert warning.ok is False
+        assert warning.severity == "warn"
+        assert "relative" in warning.detail
+        assert str(isolated_env) in warning.detail
+        assert has_error([warning]) is False
+
+    def test_doctor_accepts_absolute_ghost_home(self, isolated_env, monkeypatch):
+        monkeypatch.setenv("GHOST_HOME", str(isolated_env / "absolute"))
+        checks = run_doctor_checks()
+        assert all(item.name != "GHOST_HOME" for item in checks)

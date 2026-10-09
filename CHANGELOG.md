@@ -30,7 +30,8 @@ The package version in `pyproject.toml` is **0.1.0**. There is no GitHub release
 ### Changed
 
 - `ghost doctor` reports the resolved data path and its source (`DATABASE_URL`, `GHOST_HOME`, or `platformdirs`).
-- A legacy in-package `ghost.db` is copied (never moved) into the new home once, only when the destination is missing and `DATABASE_URL` is unset. The original file is left in place.
+- A legacy in-package `ghost.db` is copied with the SQLite backup API (never moved, WAL included) into the new home once, only when the destination is missing and `DATABASE_URL` is unset. The original file is left in place. If the filesystem cannot hardlink the copy, Ghost falls back to an exclusive create; a failed migration is logged and does not abort startup.
+- `ghost doctor` warns when `GHOST_HOME` is relative, or when legacy report files remain in the package `investigations/` directory. A `GHOST_HOME` that cannot be mode `0700`, or that is not owned by the current user, is logged and does not abort import.
 - Docker sets `GHOST_HOME=/app/ghost` so data and investigations match the mounts at `/app/ghost/data` and `/app/ghost/investigations`.
 - README positioning: local authorized case files + provenance, not "AI-Powered Platform." Social and darkweb modules marked experimental / not Quick Start defaults.
 - Default investigations no longer auto-run experimental `social` or `darkweb` collectors. Opt in with `--modules social` / `--modules darkweb`.

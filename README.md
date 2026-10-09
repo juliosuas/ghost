@@ -133,9 +133,11 @@ A pip or pipx install does **not** keep the SQLite database or investigation rep
 | `GHOST_HOME` | `$GHOST_HOME/data/ghost.db` | `$GHOST_HOME/investigations/` |
 | platformdirs (default) | `user_data_dir("ghost")/data/ghost.db` | `user_data_dir("ghost")/investigations/` |
 
-On Linux the platformdirs default is `~/.local/share/ghost`. The home directory is created mode `0700` and the database file mode `0600`. Override the home with `GHOST_HOME=/var/lib/ghost` (or any absolute path). `DATABASE_URL` overrides only the database file and takes precedence over `GHOST_HOME`. `ghost doctor` prints the resolved data path and which of `DATABASE_URL`, `GHOST_HOME`, or `platformdirs` won.
+On Linux the platformdirs default is `~/.local/share/ghost`. The home directory is created mode `0700` and the database file mode `0600`. Override the home with `GHOST_HOME=/var/lib/ghost` (or any absolute path). A relative `GHOST_HOME` is resolved against the process working directory; `ghost doctor` warns when that happens. `DATABASE_URL` overrides only the database file and takes precedence over `GHOST_HOME`. `ghost doctor` prints the resolved data path and which of `DATABASE_URL`, `GHOST_HOME`, or `platformdirs` won.
 
-If a previous install left `ghost.db` inside the package, Ghost **copies** it into the new location once — only when the new file is absent and `DATABASE_URL` is unset. The original file is left in place and is never overwritten.
+Importing `ghost.core.config` calls `prepare_storage()` immediately. That creates the home directory and, when allowed, copies a legacy database before the CLI or API uses those paths.
+
+If a previous install left `ghost.db` inside the package, Ghost copies it with the SQLite backup API (so uncheckpointed WAL data is included) into the new location once — only when the new file is absent and `DATABASE_URL` is unset. The original file is left in place and is never overwritten. Investigation reports that are still under the package `investigations/` directory are not migrated; `ghost doctor` warns when those files are present.
 
 ### PyPI
 
