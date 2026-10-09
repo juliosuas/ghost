@@ -17,10 +17,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      actions: write
-      # Upload Scorecard SARIF to code scanning. This is not a CodeQL workflow.
+      actions: read
       security-events: write
-      # OIDC token required for publish_results.
       id-token: write
 
     steps:
