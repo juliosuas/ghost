@@ -15,8 +15,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY --chown=ghost:ghost . .
 
-RUN mkdir -p /app/data /app/investigations \
-    && chown ghost:ghost /app/data /app/investigations
+# ghost/core/config.py writes the SQLite DB and reports under the package dir.
+RUN mkdir -p /app/ghost/data /app/ghost/investigations \
+    && chown ghost:ghost /app/ghost/data /app/ghost/investigations
 
 USER ghost
 

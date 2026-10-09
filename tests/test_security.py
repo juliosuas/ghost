@@ -229,3 +229,19 @@ class TestEnvAndComposeDefaults:
         assert "127.0.0.1:${GHOST_PORT:-5000}:5000" in text
         assert '"0.0.0.0:' not in text
         assert "urllib.request" in text
+
+    def test_compose_volumes_match_runtime_data_paths(self):
+        from ghost.core.config import BASE_DIR, DATA_DIR, INVESTIGATIONS_DIR
+
+        root = Path(__file__).resolve().parents[1]
+        compose = (root / "docker-compose.yml").read_text(encoding="utf-8")
+        dockerfile = (root / "Dockerfile").read_text(encoding="utf-8")
+        # The image copies the repo to /app, so the package dir is /app/ghost.
+        container_data = "/app/ghost/" + DATA_DIR.relative_to(BASE_DIR).as_posix()
+        container_inv = "/app/ghost/" + INVESTIGATIONS_DIR.relative_to(BASE_DIR).as_posix()
+        assert f"ghost_data:{container_data}" in compose
+        assert f"./investigations:{container_inv}" in compose
+        assert ":/app/data" not in compose
+        assert ":/app/investigations" not in compose
+        assert container_data in dockerfile
+        assert container_inv in dockerfile

@@ -11,8 +11,10 @@ services:
       # Override GHOST_HOST from .env (127.0.0.1) so the proxy can reach the app.
       GHOST_HOST: "0.0.0.0"
     volumes:
-      - ghost_data:/app/data
-      - ./investigations:/app/investigations
+      # Must match ghost/core/config.py: DATA_DIR / INVESTIGATIONS_DIR live under
+      # the package directory (/app/ghost/...), not /app/.
+      - ghost_data:/app/ghost/data
+      - ./investigations:/app/ghost/investigations
     restart: unless-stopped
     user: "1000:1000"
     healthcheck:
