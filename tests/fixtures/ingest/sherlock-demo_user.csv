@@ -1,0 +1,3 @@
+username,name,url_main,url_user,exists,http_status,response_time_s
+demo_user,Example,https://example.com/,https://example.com/demo_user/%2e%2e?x=1&y=2,Claimed,200,0.4200
+demo_user,Other,https://example.com/other,https://example.com/other/demo_user,Available,404,0.10

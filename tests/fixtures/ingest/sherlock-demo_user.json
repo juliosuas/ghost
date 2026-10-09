@@ -1,0 +1,11 @@
+{
+  "Example": {
+    "username": "demo_user",
+    "name": "Example",
+    "url_main": "https://example.com/",
+    "url_user": "https://example.com/demo_user",
+    "exists": "Claimed",
+    "http_status": 200,
+    "response_time_s": 0.42
+  }
+}

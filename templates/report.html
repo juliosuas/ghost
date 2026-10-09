@@ -281,8 +281,30 @@
       {% for p in profiles %}
       <div class="profile-card">
         <div class="platform">{{ p.platform or 'Unknown' }}</div>
-        <div class="url"><a href="{{ p.url }}" target="_blank">{{ p.url }}</a></div>
+        <div class="url">{% set href = p.url | linkable_url %}{% if href %}<a href="{{ href }}" rel="nofollow noopener noreferrer">{{ p.url }}</a>{% else %}{{ p.url }}{% endif %}</div>
         {% if p.followers is defined %}<div style="font-size:0.85em;color:var(--muted);margin-top:4px;">Followers: {{ p.followers }}</div>{% endif %}
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if findings.get('ingest') and findings.ingest.get('records') %}
+    <h3>Ingested Records ({{ findings.ingest.records | length }})</h3>
+    <div class="profiles-grid">
+      {% for record in findings.ingest.records %}
+      <div class="profile-card">
+        <div class="platform">{{ record.platform or 'Unknown' }}</div>
+        <div class="url">
+          {% set href = record.url | linkable_url %}
+          {% if href %}<a href="{{ href }}" rel="nofollow noopener noreferrer">{{ record.url }}</a>{% elif record.url %}{{ record.url }}{% else %}No URL in source{% endif %}
+        </div>
+        <div style="font-size:0.85em;color:var(--muted);margin-top:4px;">{{ record.tool }} · {{ record.status }} · {{ record.subject }}</div>
+        {% if record.fields %}
+        <pre>{{ record.fields | tojson(indent=2) }}</pre>
+        {% endif %}
+        {% if record.provenance %}
+        <div style="font-size:0.8em;color:var(--muted);margin-top:4px;word-break:break-all;">{{ record.provenance.tool }} · {{ record.provenance.ingested_at }} · {{ record.provenance.source_sha256 }}</div>
+        {% endif %}
       </div>
       {% endfor %}
     </div>
