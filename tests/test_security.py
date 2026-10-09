@@ -246,3 +246,14 @@ class TestEnvAndComposeDefaults:
         assert "/app/ghost/data" in dockerfile
         assert "/app/ghost/investigations" in dockerfile
         assert 'user: "1000:1000"' in compose
+
+    def test_dockerignore_excludes_env_databases_and_investigations(self):
+        root = Path(__file__).resolve().parents[1]
+        lines = [
+            line.strip()
+            for line in (root / ".dockerignore").read_text(encoding="utf-8").splitlines()
+            if line.strip() and not line.strip().startswith("#")
+        ]
+        assert ".env" in lines
+        assert "*.db" in lines
+        assert "investigations/" in lines
